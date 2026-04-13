@@ -100,6 +100,23 @@ export default function MeasureTool() {
   const [showExport,setShowExport] = useState(false);
   const [bgRemoving,setBgRemoving] = useState(false);
   const [bgError,setBgError]       = useState(null);
+  const [loadingStep,setLoadingStep] = useState(0);
+  const [aspectRatio,setAspectRatio] = useState('original');
+
+  const ASPECT_RATIOS = [
+    {id:'original', label:'Original',     desc:'As-is'},
+    {id:'1:1',      label:'Square 1:1',   desc:'Poshmark · Depop'},
+    {id:'4:5',      label:'Portrait 4:5', desc:'Instagram'},
+    {id:'3:4',      label:'Standard 3:4', desc:'eBay'},
+  ];
+
+  const LOADING_STEPS = [
+    'Uploading your photo…',
+    'Analyzing garment details…',
+    'Generating ghost mannequin…',
+    'Applying invisible mannequin…',
+    'Finalizing image…',
+  ];
 
   const canvasRef        = useRef(null);
   const exportRef        = useRef(null);
@@ -161,6 +178,14 @@ export default function MeasureTool() {
     if (!file||!file.type.startsWith('image/')) return;
     setLines([]); setPending(null); setColorIdx(0); setShowExport(false); setBgError(null);
     setBgRemoving(true);
+    setLoadingStep(0);
+
+    // Cycle through loading steps while waiting
+    let stepIdx = 0;
+    const stepInterval = setInterval(() => {
+      stepIdx = Math.min(stepIdx + 1, 4);
+      setLoadingStep(stepIdx);
+    }, 4000);
 
     // Call Gemini ghost mannequin API route
     try {
@@ -168,14 +193,17 @@ export default function MeasureTool() {
       formData.append('image_file', file);
       const res = await fetch('/api/ghost-mannequin', { method: 'POST', body: formData });
       if (res.ok) {
+        clearInterval(stepInterval);
         const blob = await res.blob();
         loadImageFromBlob(blob);
         return;
       } else {
+        clearInterval(stepInterval);
         const err = await res.json().catch(()=>({}));
         setBgError(err.error || 'Ghost mannequin generation failed. Using original photo.');
       }
     } catch(e) {
+      clearInterval(stepInterval);
       setBgError('Ghost mannequin generation failed. Using original photo.');
     }
 
@@ -231,20 +259,31 @@ export default function MeasureTool() {
 
   const handleExport = () => {
     const src=canvasRef.current; if(!src||!imgRef.current) return;
-    const W=src.width;
+
+    // Determine canvas dimensions based on aspect ratio
+    let W=src.width, H=src.height;
+    if (aspectRatio==='1:1') { W=Math.max(W,H); H=W; }
+    else if (aspectRatio==='4:5') { H=Math.round(W*5/4); }
+    else if (aspectRatio==='3:4') { H=Math.round(W*4/3); }
+    // For 'original' keep W/H as-is
     const ROW_H=36, COLS=2, PAD=20;
     const rows=Math.ceil(lines.length/COLS);
     const tableH=lines.length>0?rows*ROW_H+48:0;
     const infoH=(brand||itemName||notes)?68:0;
     const ec=document.createElement('canvas');
-    ec.width=W; ec.height=src.height+tableH+infoH;
+    ec.width=W; ec.height=H+tableH+infoH;
     const ctx=ec.getContext('2d');
+    // Draw white background for padding areas
+    ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H);
     const imgCanvas=document.createElement('canvas');
-    imgCanvas.width=W; imgCanvas.height=src.height;
+    imgCanvas.width=src.width; imgCanvas.height=src.height;
     renderExportImage(imgCanvas,imgRef.current,lines);
-    ctx.drawImage(imgCanvas,0,0);
+    // Center image within the AR-adjusted canvas
+    const offX=Math.round((W-src.width)/2);
+    const offY=Math.round((H-src.height)/2);
+    ctx.drawImage(imgCanvas,offX,offY);
     if (lines.length>0) {
-      const tableY=src.height;
+      const tableY=H;
       ctx.fillStyle='#f8f6f0'; ctx.fillRect(0,tableY,W,tableH);
       ctx.fillStyle='#e0ddd6'; ctx.fillRect(0,tableY,W,1);
       ctx.font='bold 11px monospace'; ctx.fillStyle='#888';
@@ -271,7 +310,7 @@ export default function MeasureTool() {
       });
     }
     if (infoH>0) {
-      const iy=src.height+tableH;
+      const iy=H+tableH;
       ctx.fillStyle='#1a1a1a'; ctx.fillRect(0,iy,W,infoH);
       ctx.fillStyle='#333'; ctx.fillRect(0,iy,W,1);
       ctx.textBaseline='top'; ctx.textAlign='left'; let ty=iy+12;
@@ -283,6 +322,8 @@ export default function MeasureTool() {
     }
     const el=exportRef.current;
     el.width=ec.width; el.height=ec.height;
+    // Store aspect ratio label for display
+
     el.getContext('2d').drawImage(ec,0,0);
     setShowExport(true);
     setTimeout(()=>exportSectionRef.current?.scrollIntoView({behavior:'smooth',block:'start'}),150);
@@ -318,8 +359,29 @@ export default function MeasureTool() {
         )}
       </div>
 
+      {/* FULL SCREEN LOADING (when triggered from upload screen) */}
+      {phase==='upload'&&bgRemoving&&(
+        <div style={{position:'fixed',inset:0,background:'rgba(6,6,6,0.97)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:24,zIndex:100}}>
+          <div style={{position:'relative',width:80,height:80}}>
+            {[0,1,2].map(i=>(
+              <div key={i} style={{position:'absolute',inset:i*10,borderRadius:'50%',border:'2px solid transparent',borderTopColor:i===0?'#e8b84b':i===1?'#4FC3F7':'#444',animation:`spin ${[0.9,1.3,1.8][i]}s linear infinite ${i%2?'reverse':''}`}}/>
+            ))}
+          </div>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:'#f0ebe0',fontWeight:700}}>Generating Ghost Mannequin</div>
+            <div style={{fontFamily:'monospace',fontSize:11,color:'#e8b84b',letterSpacing:'0.12em'}}>{LOADING_STEPS[loadingStep]}</div>
+            <div style={{display:'flex',gap:8,marginTop:6}}>
+              {LOADING_STEPS.map((_,i)=>(
+                <div key={i} style={{width:i===loadingStep?28:8,height:4,borderRadius:2,background:i===loadingStep?'#e8b84b':i<loadingStep?'#666':'#222',transition:'all 0.4s'}}/>
+              ))}
+            </div>
+          </div>
+          <div style={{fontFamily:'monospace',fontSize:9,color:'#444',letterSpacing:'0.1em'}}>Powered by Gemini · This may take 20–30 seconds</div>
+        </div>
+      )}
+
       {/* UPLOAD */}
-      {phase==='upload'&&(
+      {phase==='upload'&&!bgRemoving&&(
         <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',padding:40}}>
           <div style={{maxWidth:560,width:'100%',display:'flex',flexDirection:'column',gap:24}}>
             <div>
@@ -433,6 +495,18 @@ export default function MeasureTool() {
                   <div><label style={S.lbl}>Brand</label><input type='text' placeholder='e.g. Moschino Jeans' value={brand} onChange={e=>setBrand(e.target.value)} style={S.inp}/></div>
                   <div><label style={S.lbl}>Item</label><input type='text' placeholder='e.g. Love All Over' value={itemName} onChange={e=>setItemName(e.target.value)} style={S.inp}/></div>
                   <div><label style={S.lbl}>Notes</label><input type='text' placeholder='e.g. Condition, colour' value={notes} onChange={e=>setNotes(e.target.value)} style={S.inp}/></div>
+                  <div>
+                    <label style={S.lbl}>Export Format</label>
+                    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5}}>
+                      {ASPECT_RATIOS.map(ar=>(
+                        <div key={ar.id} onClick={()=>setAspectRatio(ar.id)}
+                          style={{padding:'7px 8px',border:`1px solid ${aspectRatio===ar.id?'#e8b84b':'#2a2a2a'}`,borderRadius:2,cursor:'pointer',background:aspectRatio===ar.id?'#e8b84b11':'#080808',transition:'all 0.15s'}}>
+                          <div style={{fontSize:10,color:aspectRatio===ar.id?'#e8b84b':'#888',fontWeight:'bold'}}>{ar.label}</div>
+                          <div style={{fontSize:8,color:'#444',marginTop:1}}>{ar.desc}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
                   <button onClick={handleExport} style={{padding:'11px',background:'#e8b84b',border:'none',fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,letterSpacing:'0.06em',cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>
                     Generate Sheet ↓
                   </button>
@@ -443,14 +517,22 @@ export default function MeasureTool() {
             {/* CANVAS */}
             <div style={{overflow:'auto',display:'flex',alignItems:'flex-start',justifyContent:'center',padding:'20px',background:'#060606',position:'relative'}}>
               {bgRemoving&&(
-                <div style={{position:'absolute',inset:0,background:'rgba(6,6,6,0.88)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:16,zIndex:10}}>
-                  <div style={{position:'relative',width:48,height:48}}>
-                    {[0,1].map(i=>(
-                      <div key={i} style={{position:'absolute',inset:i*7,borderRadius:'50%',border:'1.5px solid transparent',borderTopColor:i===0?'#e8b84b':'#333',animation:`spin ${i===0?0.9:1.3}s linear infinite ${i?'reverse':''}`}}/>
+                <div style={{position:'absolute',inset:0,background:'rgba(6,6,6,0.95)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:24,zIndex:10}}>
+                  <div style={{position:'relative',width:64,height:64}}>
+                    {[0,1,2].map(i=>(
+                      <div key={i} style={{position:'absolute',inset:i*8,borderRadius:'50%',border:'1.5px solid transparent',borderTopColor:i===0?'#e8b84b':i===1?'#4FC3F7':'#333',animation:`spin ${[0.9,1.3,1.8][i]}s linear infinite ${i%2?'reverse':''}`}}/>
                     ))}
                   </div>
-                  <div style={{fontFamily:'monospace',fontSize:10,color:'#e8b84b',letterSpacing:'0.15em',textTransform:'uppercase'}}>Generating ghost mannequin…</div>
-                  <div style={{fontFamily:'monospace',fontSize:9,color:'#555',letterSpacing:'0.1em'}}>Powered by Gemini</div>
+                  <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:8}}>
+                    <div style={{fontFamily:"'Playfair Display',serif",fontSize:16,color:'#f0ebe0'}}>Generating Ghost Mannequin</div>
+                    <div style={{fontFamily:'monospace',fontSize:10,color:'#e8b84b',letterSpacing:'0.12em'}}>{LOADING_STEPS[loadingStep]}</div>
+                    <div style={{display:'flex',gap:6,marginTop:4}}>
+                      {LOADING_STEPS.map((_,i)=>(
+                        <div key={i} style={{width:i===loadingStep?20:6,height:4,borderRadius:2,background:i===loadingStep?'#e8b84b':i<loadingStep?'#555':'#222',transition:'all 0.4s'}}/>
+                      ))}
+                    </div>
+                  </div>
+                  <div style={{fontFamily:'monospace',fontSize:9,color:'#333',letterSpacing:'0.1em'}}>Powered by Gemini · This may take 20–30 seconds</div>
                 </div>
               )}
               {bgError&&(
@@ -467,6 +549,10 @@ export default function MeasureTool() {
           {/* EXPORT PREVIEW */}
           <div ref={exportSectionRef} style={{display:showExport?'flex':'none',borderTop:'2px solid #e8b84b44',padding:'28px 32px',background:'#060606',flexDirection:'column',alignItems:'center',gap:16}}>
             <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:'#e8b84b'}}>Measurement Sheet</div>
+            <div style={{display:'flex',gap:8,alignItems:'center'}}>
+              <span style={{fontFamily:'monospace',fontSize:9,color:'#444',letterSpacing:'0.12em',textTransform:'uppercase'}}>Format:</span>
+              <span style={{fontFamily:'monospace',fontSize:9,color:'#e8b84b',letterSpacing:'0.12em'}}>{ASPECT_RATIOS.find(a=>a.id===aspectRatio)?.label} · {ASPECT_RATIOS.find(a=>a.id===aspectRatio)?.desc}</span>
+            </div>
             <p style={{fontFamily:'monospace',fontSize:10,color:'#555',letterSpacing:'0.1em',textAlign:'center',lineHeight:1.8}}>
               <strong style={{color:'#888'}}>Right-click → Save Image As</strong> to download
             </p>
