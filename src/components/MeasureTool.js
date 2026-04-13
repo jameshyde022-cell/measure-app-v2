@@ -342,6 +342,28 @@ export default function MeasureTool() {
   return (
     <div style={{background:'#0d0d0d',minHeight:'100vh',color:'#f0ebe0',display:'flex',flexDirection:'column',fontFamily:'monospace'}}>
 
+      {/* GLOBAL LOADING OVERLAY — always on top regardless of phase */}
+      {bgRemoving&&(
+        <div style={{position:'fixed',inset:0,background:'rgba(6,6,6,0.97)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:24,zIndex:999}}>
+          <style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style>
+          <div style={{position:'relative',width:80,height:80}}>
+            {[0,1,2].map(i=>(
+              <div key={i} style={{position:'absolute',inset:i*10,borderRadius:'50%',border:'2px solid transparent',borderTopColor:i===0?'#e8b84b':i===1?'#4FC3F7':'#444',animation:`spin ${[0.9,1.3,1.8][i]}s linear infinite ${i%2?'reverse':''}`}}/>
+            ))}
+          </div>
+          <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:10}}>
+            <div style={{fontFamily:"'Playfair Display',serif",fontSize:22,color:'#f0ebe0',fontWeight:700}}>Generating Ghost Mannequin</div>
+            <div style={{fontFamily:'monospace',fontSize:11,color:'#e8b84b',letterSpacing:'0.12em'}}>{LOADING_STEPS[loadingStep]}</div>
+            <div style={{display:'flex',gap:8,marginTop:6}}>
+              {LOADING_STEPS.map((_,i)=>(
+                <div key={i} style={{width:i===loadingStep?28:8,height:4,borderRadius:2,background:i===loadingStep?'#e8b84b':i<loadingStep?'#666':'#222',transition:'all 0.4s'}}/>
+              ))}
+            </div>
+          </div>
+          <div style={{fontFamily:'monospace',fontSize:9,color:'#444',letterSpacing:'0.1em'}}>Powered by Gemini · This may take 20–30 seconds</div>
+        </div>
+      )}
+
       {/* Header */}
       <div style={{borderBottom:'1px solid #1a1a1a',padding:'12px 24px',display:'flex',alignItems:'center',gap:14}}>
         <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700}}>
@@ -492,9 +514,6 @@ export default function MeasureTool() {
               {lines.length>0&&(
                 <div style={{borderTop:'1px solid #1a1a1a',paddingTop:12,display:'flex',flexDirection:'column',gap:8}}>
                   <span style={S.lbl}>Sheet Details</span>
-                  <div><label style={S.lbl}>Brand</label><input type='text' placeholder='e.g. Moschino Jeans' value={brand} onChange={e=>setBrand(e.target.value)} style={S.inp}/></div>
-                  <div><label style={S.lbl}>Item</label><input type='text' placeholder='e.g. Love All Over' value={itemName} onChange={e=>setItemName(e.target.value)} style={S.inp}/></div>
-                  <div><label style={S.lbl}>Notes</label><input type='text' placeholder='e.g. Condition, colour' value={notes} onChange={e=>setNotes(e.target.value)} style={S.inp}/></div>
                   <div>
                     <label style={S.lbl}>Export Format</label>
                     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:5}}>
@@ -507,6 +526,9 @@ export default function MeasureTool() {
                       ))}
                     </div>
                   </div>
+                  <div><label style={S.lbl}>Brand</label><input type='text' placeholder='e.g. Moschino Jeans' value={brand} onChange={e=>setBrand(e.target.value)} style={S.inp}/></div>
+                  <div><label style={S.lbl}>Item</label><input type='text' placeholder='e.g. Love All Over' value={itemName} onChange={e=>setItemName(e.target.value)} style={S.inp}/></div>
+                  <div><label style={S.lbl}>Notes</label><input type='text' placeholder='e.g. Condition, colour' value={notes} onChange={e=>setNotes(e.target.value)} style={S.inp}/></div>
                   <button onClick={handleExport} style={{padding:'11px',background:'#e8b84b',border:'none',fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,letterSpacing:'0.06em',cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>
                     Generate Sheet ↓
                   </button>
