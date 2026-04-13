@@ -1,12 +1,14 @@
 {
   "name": "Measure - Garment Annotation Tool",
   "short_name": "Measure",
-  "description": "Professional garment measurement and annotation tool with ghost mannequin generation",
+  "description": "Professional garment measurement and ghost mannequin tool for clothing resellers",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#0d0d0d",
   "theme_color": "#e8b84b",
   "orientation": "portrait",
+  "lang": "en",
+  "scope": "/",
   "icons": [
     {
       "src": "/icons/icon-192.png",
