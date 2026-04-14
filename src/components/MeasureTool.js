@@ -457,11 +457,8 @@ export default function MeasureTool() {
 
       {/* ANNOTATE */}
       {phase==='annotate'&&(
-        <div style={{flex:1,display:'flex',flexDirection:'column'}}>
-          <div style={{display:'grid',gridTemplateColumns:'268px 1fr',flex:1,minHeight:0,overflow:'hidden'}}>
-
-            {/* LEFT */}
-            <div style={{borderRight:'1px solid #1a1a1a',padding:'16px',display:'flex',flexDirection:'column',gap:14,overflowY:'auto'}}>
+        <div style={{flex:1,display:'flex',flexDirection:'column',overflowY:'auto',overflowX:'hidden'}}>
+          <div>
 
               <div style={{background:'#080808',border:'1px solid #1e1e1e',borderRadius:2,padding:'13px'}}>
                 <span style={{...S.lbl,color:'#4FC3F7',marginBottom:10}}>Add Measurement</span>
@@ -537,7 +534,7 @@ export default function MeasureTool() {
             </div>
 
             {/* CANVAS */}
-            <div style={{overflow:'auto',display:'flex',alignItems:'flex-start',justifyContent:'center',padding:'20px',background:'#060606',position:'relative'}}>
+            <div style={{overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',padding:'8px',background:'#060606',position:'sticky',top:0,zIndex:5,width:'100%'}}>
               {bgRemoving&&(
                 <div style={{position:'absolute',inset:0,background:'rgba(6,6,6,0.95)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:24,zIndex:10}}>
                   <div style={{position:'relative',width:64,height:64}}>
@@ -563,8 +560,15 @@ export default function MeasureTool() {
                   <button onClick={()=>setBgError(null)} style={{background:'transparent',border:'none',color:'#EF9A9A',cursor:'pointer',marginLeft:10,fontSize:12}}>×</button>
                 </div>
               )}
-              <canvas ref={canvasRef} onClick={handleClick} onMouseMove={handleMove}
-                style={{cursor:'crosshair',borderRadius:2,maxWidth:'100%',boxShadow:'0 4px 40px rgba(0,0,0,0.7)'}}/>
+              <canvas ref={canvasRef} 
+                onClick={handleClick} 
+                onMouseMove={handleMove}
+                onTouchEnd={e=>{
+                  e.preventDefault();
+                  const t=e.changedTouches[0];
+                  handleClick({clientX:t.clientX,clientY:t.clientY});
+                }}
+                style={{cursor:'crosshair',borderRadius:2,maxWidth:'100%',width:'100%',touchAction:'none',display:'block',boxShadow:'0 4px 40px rgba(0,0,0,0.7)'}}/>
             </div>
           </div>
 
