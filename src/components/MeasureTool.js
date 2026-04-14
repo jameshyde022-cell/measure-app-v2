@@ -136,7 +136,7 @@ export default function MeasureTool() {
   useEffect(()=>{
     if (phase!=='annotate'||!canvasRef.current||!imgRef.current) return;
     const container=canvasRef.current.parentElement;
-    const maxW=container.clientWidth-2, maxH=window.innerHeight-160;
+    const maxW=container.clientWidth-16, maxH=window.innerHeight*0.55;
     const {w,h}=naturalSize;
     const scale=Math.min(1,maxW/w,maxH/h);
     canvasRef.current.width=Math.floor(w*scale);
@@ -458,7 +458,7 @@ export default function MeasureTool() {
       {/* ANNOTATE */}
       {phase==='annotate'&&(
         <div style={{flex:1,display:'flex',flexDirection:'column',overflowY:'auto',overflowX:'hidden'}}>
-          <div>
+          <div style={{display:'flex',flexDirection:'column',padding:'16px',gap:14}}>
 
               <div style={{background:'#080808',border:'1px solid #1e1e1e',borderRadius:2,padding:'13px'}}>
                 <span style={{...S.lbl,color:'#4FC3F7',marginBottom:10}}>Add Measurement</span>
@@ -534,7 +534,7 @@ export default function MeasureTool() {
             </div>
 
             {/* CANVAS */}
-            <div style={{overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',padding:'8px',background:'#060606',position:'sticky',top:0,zIndex:5,width:'100%'}}>
+            <div style={{overflow:'hidden',display:'flex',alignItems:'center',justifyContent:'center',padding:'8px',background:'#060606',position:'sticky',top:0,zIndex:5,width:'100%',minHeight:'60vw',maxHeight:'70vh'}}>
               {bgRemoving&&(
                 <div style={{position:'absolute',inset:0,background:'rgba(6,6,6,0.95)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',gap:24,zIndex:10}}>
                   <div style={{position:'relative',width:64,height:64}}>
