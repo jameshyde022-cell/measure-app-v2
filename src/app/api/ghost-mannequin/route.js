@@ -78,11 +78,9 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 });
     }
 
-    // Try models in order until one works
     const models = [
-      'gemini-2.5-flash-preview-05-20',
-      'gemini-2.0-flash-exp-image-generation',
-      'gemini-2.5-flash',
+      'gemini-3.1-flash-image-preview',
+      'gemini-2.5-flash-image',
     ];
 
     let lastError = null;
@@ -128,6 +126,7 @@ export async function POST(req) {
 
         if (!imagePart) {
           lastError = 'No image returned';
+          console.error(`Model ${model} returned no image. Parts:`, JSON.stringify(parts));
           continue;
         }
 
@@ -151,6 +150,6 @@ export async function POST(req) {
 
   } catch (err) {
     console.error('Ghost mannequin error:', err);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    return NextResponse.json({ error: err.message || 'Internal server error' }, { status: 500 });
   }
 }
