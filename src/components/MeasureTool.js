@@ -136,9 +136,9 @@ export default function MeasureTool() {
   useEffect(()=>{
     if (phase!=='annotate'||!canvasRef.current||!imgRef.current) return;
     const container=canvasRef.current.parentElement;
-    const maxW=container.clientWidth-16, maxH=window.innerHeight*0.55;
+    const maxW=window.innerWidth-16, maxH=window.innerHeight*0.65;
     const {w,h}=naturalSize;
-    const scale=Math.min(1,maxW/w,maxH/h);
+    const scale=Math.min(maxW/w,maxH/h);
     canvasRef.current.width=Math.floor(w*scale);
     canvasRef.current.height=Math.floor(h*scale);
     redraw();
