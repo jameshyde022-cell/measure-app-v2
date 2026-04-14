@@ -78,56 +78,76 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 });
     }
 
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-image-preview:generateContent?key=${apiKey}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          contents: [{
-            parts: [
-              {
-                inline_data: {
-                  mime_type: mimeType,
-                  data: base64Image,
-                }
-              },
-              {
-                text: FRONT_VIEW_PROMPT
+    // Try models in order until one works
+    const models = [
+      'gemini-2.5-flash-preview-05-20',
+      'gemini-2.0-flash-exp-image-generation',
+      'gemini-2.5-flash',
+    ];
+
+    let lastError = null;
+
+    for (const model of models) {
+      try {
+        const response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{
+                parts: [
+                  {
+                    inline_data: {
+                      mime_type: mimeType,
+                      data: base64Image,
+                    }
+                  },
+                  {
+                    text: FRONT_VIEW_PROMPT
+                  }
+                ]
+              }],
+              generationConfig: {
+                responseModalities: ['TEXT', 'IMAGE'],
               }
-            ]
-          }],
-          generationConfig: {
-            responseModalities: ['image'],
+            })
           }
-        })
-      }
-    );
+        );
 
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      console.error('Gemini error:', err);
-      return NextResponse.json({ error: err?.error?.message || 'Gemini request failed' }, { status: 500 });
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({}));
+          lastError = err?.error?.message || 'Model failed';
+          console.error(`Model ${model} failed:`, lastError);
+          continue;
+        }
+
+        const data = await response.json();
+        const parts = data?.candidates?.[0]?.content?.parts;
+        const imagePart = parts?.find(p => p.inlineData?.mimeType?.startsWith('image/'));
+
+        if (!imagePart) {
+          lastError = 'No image returned';
+          continue;
+        }
+
+        const imageBuffer = Buffer.from(imagePart.inlineData.data, 'base64');
+        return new NextResponse(imageBuffer, {
+          status: 200,
+          headers: {
+            'Content-Type': imagePart.inlineData.mimeType,
+            'Content-Length': imageBuffer.length.toString(),
+          }
+        });
+
+      } catch (e) {
+        lastError = e.message;
+        console.error(`Model ${model} threw:`, e);
+        continue;
+      }
     }
 
-    const data = await response.json();
-
-    // Extract the image from Gemini's response
-    const parts = data?.candidates?.[0]?.content?.parts;
-    const imagePart = parts?.find(p => p.inlineData?.mimeType?.startsWith('image/'));
-
-    if (!imagePart) {
-      return NextResponse.json({ error: 'No image returned from Gemini' }, { status: 500 });
-    }
-
-    const imageBuffer = Buffer.from(imagePart.inlineData.data, 'base64');
-    return new NextResponse(imageBuffer, {
-      status: 200,
-      headers: {
-        'Content-Type': imagePart.inlineData.mimeType,
-        'Content-Length': imageBuffer.length.toString(),
-      }
-    });
+    return NextResponse.json({ error: lastError || 'All models failed' }, { status: 500 });
 
   } catch (err) {
     console.error('Ghost mannequin error:', err);
