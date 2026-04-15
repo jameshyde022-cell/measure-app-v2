@@ -14,24 +14,40 @@ const LINE_COLORS = [
 ];
 
 const HIT_RADIUS = 22;
+const FREE_MAX_LINES = 4;
+const FREE_MAX_EXPORTS_PER_DAY = 3;
 
-function mid(a, b) { return { x: (a.x+b.x)/2, y: (a.y+b.y)/2 }; }
-function dist(a, b) { return Math.hypot(a.x-b.x, a.y-b.y); }
-
-function drawEndDot(ctx, pt, color, r, highlight) {
-  ctx.beginPath(); ctx.arc(pt.x,pt.y,r,0,Math.PI*2);
-  ctx.fillStyle = highlight ? '#ffffff' : color;
-  ctx.fill();
-  ctx.strokeStyle = highlight ? color : 'rgba(0,0,0,0.5)';
-  ctx.lineWidth = highlight ? 2.5 : 1;
-  ctx.stroke();
+function todayKey() {
+  return 'measure_exports_' + new Date().toISOString().slice(0,10);
 }
 
-function drawNumberTag(ctx, num, x, y, color) {
-  const label = String(num);
-  ctx.font = 'bold 10px monospace';
-  const tw = ctx.measureText(label).width;
-  const r = Math.max(9, tw/2+4);
+function getExportCount() {
+  try { return parseInt(localStorage.getItem(todayKey())||'0',10); } catch(e) { return 0; }
+}
+
+function incrementExportCount() {
+  try { localStorage.setItem(todayKey(), String(getExportCount()+1)); } catch(e) {}
+}
+
+function isPro() {
+  try { return localStorage.getItem('measure_pro')==='true'; } catch(e) { return false; }
+}
+
+function mid(a,b) { return {x:(a.x+b.x)/2,y:(a.y+b.y)/2}; }
+function dist(a,b) { return Math.hypot(a.x-b.x,a.y-b.y); }
+
+function drawEndDot(ctx,pt,color,r,highlight) {
+  ctx.beginPath(); ctx.arc(pt.x,pt.y,r,0,Math.PI*2);
+  ctx.fillStyle=highlight?'#ffffff':color; ctx.fill();
+  ctx.strokeStyle=highlight?color:'rgba(0,0,0,0.5)';
+  ctx.lineWidth=highlight?2.5:1; ctx.stroke();
+}
+
+function drawNumberTag(ctx,num,x,y,color) {
+  const label=String(num);
+  ctx.font='bold 10px monospace';
+  const tw=ctx.measureText(label).width;
+  const r=Math.max(9,tw/2+4);
   ctx.beginPath(); ctx.arc(x,y,r,0,Math.PI*2);
   ctx.fillStyle='rgba(8,8,8,0.82)'; ctx.fill();
   ctx.strokeStyle=color; ctx.lineWidth=1.5; ctx.stroke();
@@ -39,8 +55,8 @@ function drawNumberTag(ctx, num, x, y, color) {
   ctx.fillText(label,x,y);
 }
 
-function drawCrosshair(ctx, pt) {
-  const g=2, size=14;
+function drawCrosshair(ctx,pt) {
+  const g=2,size=14;
   const segs=[[pt.x-size,pt.y,pt.x-g,pt.y],[pt.x+g,pt.y,pt.x+size,pt.y],[pt.x,pt.y-size,pt.x,pt.y-g],[pt.x,pt.y+g,pt.x,pt.y+size]];
   ctx.strokeStyle='rgba(0,0,0,0.7)'; ctx.lineWidth=3;
   segs.forEach(([x1,y1,x2,y2])=>{ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();});
@@ -49,12 +65,11 @@ function drawCrosshair(ctx, pt) {
   ctx.beginPath();ctx.arc(pt.x,pt.y,3,0,Math.PI*2);ctx.fillStyle='#e8b84b';ctx.fill();
 }
 
-function renderCanvas(canvas, img, lines, ix, hoverIdx) {
+function renderCanvas(canvas,img,lines,ix,hoverIdx) {
   if (!canvas||!img) return;
   const ctx=canvas.getContext('2d');
   ctx.clearRect(0,0,canvas.width,canvas.height);
   ctx.drawImage(img,0,0,canvas.width,canvas.height);
-
   lines.forEach((line,i)=>{
     const isH=hoverIdx===i;
     const {p1,p2,color}=line;
@@ -63,35 +78,23 @@ function renderCanvas(canvas, img, lines, ix, hoverIdx) {
     ctx.strokeStyle=color; ctx.lineWidth=isH?2:1.5; ctx.stroke();
     drawEndDot(ctx,p1,color,isH?5:3.5,false);
     drawEndDot(ctx,p2,color,isH?5:3.5,false);
-    const m=mid(p1,p2);
-    drawNumberTag(ctx,i+1,m.x,m.y,color);
+    drawNumberTag(ctx,i+1,mid(p1,p2).x,mid(p1,p2).y,color);
     ctx.restore();
   });
-
-  const {mode,p1,p2,color,dragging} = ix;
-
-  if (mode==='placing_p1'||mode==='placing_p2') {
-    if (p1) drawCrosshair(ctx,p1);
-  }
-
+  const {mode,p1,p2,color,dragging}=ix;
+  if ((mode==='placing_p1'||mode==='placing_p2')&&p1) drawCrosshair(ctx,p1);
   if (mode==='adjusting'&&p1&&p2) {
     ctx.save();
     ctx.beginPath(); ctx.moveTo(p1.x,p1.y); ctx.lineTo(p2.x,p2.y);
-    ctx.strokeStyle=color; ctx.lineWidth=2; ctx.setLineDash([6,3]); ctx.stroke();
-    ctx.setLineDash([]);
+    ctx.strokeStyle=color; ctx.lineWidth=2; ctx.setLineDash([6,3]); ctx.stroke(); ctx.setLineDash([]);
     drawEndDot(ctx,p1,color,8,dragging==='p1');
     drawEndDot(ctx,p2,color,8,dragging==='p2');
-    const m=mid(p1,p2);
-    drawNumberTag(ctx,lines.length+1,m.x,m.y,color);
+    drawNumberTag(ctx,lines.length+1,mid(p1,p2).x,mid(p1,p2).y,color);
     ctx.restore();
-  }
-
-  if (mode==='placing_p2'&&p1) {
-    drawCrosshair(ctx,p1);
   }
 }
 
-function renderExportImage(canvas, img, lines) {
+function renderExportImage(canvas,img,lines) {
   if (!canvas||!img) return;
   const ctx=canvas.getContext('2d');
   ctx.clearRect(0,0,canvas.width,canvas.height);
@@ -122,12 +125,16 @@ export default function MeasureTool() {
   const [brand,setBrand]             = useState('');
   const [itemName,setItemName]       = useState('');
   const [notes,setNotes]             = useState('');
+  const [customWatermark,setCustomWatermark] = useState('');
   const [showExport,setShowExport]   = useState(false);
   const [bgRemoving,setBgRemoving]   = useState(false);
   const [bgError,setBgError]         = useState(null);
   const [loadingStep,setLoadingStep] = useState(0);
   const [aspectRatio,setAspectRatio] = useState('original');
-  const [ix, setIx] = useState({mode:'idle',p1:null,p2:null,color:LINE_COLORS[0],dragging:null});
+  const [ix,setIx]                   = useState({mode:'idle',p1:null,p2:null,color:LINE_COLORS[0],dragging:null});
+  const [pro,setPro]                 = useState(false);
+  const [exportCount,setExportCount] = useState(0);
+  const [limitMsg,setLimitMsg]       = useState(null);
 
   const ASPECT_RATIOS = [
     {id:'original', label:'Original',     desc:'As-is'},
@@ -151,41 +158,47 @@ export default function MeasureTool() {
   const flatLayRef       = useRef(null);
   const exportSectionRef = useRef(null);
   const ixRef            = useRef(ix);
-  ixRef.current = ix;
+  ixRef.current          = ix;
 
   const activeName = useCustom?(customName||'Measurement'):curName;
 
+  // Load pro status and export count on mount
   useEffect(()=>{
-    renderCanvas(canvasRef.current, imgRef.current, lines, ix, hoverIdx);
-  },[ix, lines, hoverIdx]);
+    setPro(isPro());
+    setExportCount(getExportCount());
+  },[]);
+
+  useEffect(()=>{
+    renderCanvas(canvasRef.current,imgRef.current,lines,ix,hoverIdx);
+  },[ix,lines,hoverIdx]);
 
   useEffect(()=>{
     if (phase!=='annotate'||!canvasRef.current||!imgRef.current) return;
-    const maxW = window.innerWidth - 16;
-    const maxH = window.innerHeight * 0.70;
-    const {w,h} = naturalSize;
-    const scale = Math.min(maxW/w, maxH/h);
-    canvasRef.current.width  = Math.floor(w*scale);
-    canvasRef.current.height = Math.floor(h*scale);
-    renderCanvas(canvasRef.current, imgRef.current, lines, ixRef.current, hoverIdx);
+    const maxW=window.innerWidth-16;
+    const maxH=window.innerHeight*0.70;
+    const {w,h}=naturalSize;
+    const scale=Math.min(maxW/w,maxH/h);
+    canvasRef.current.width=Math.floor(w*scale);
+    canvasRef.current.height=Math.floor(h*scale);
+    renderCanvas(canvasRef.current,imgRef.current,lines,ixRef.current,hoverIdx);
   },[phase,naturalSize]);
 
-  const loadImageFromBlob = (blob) => {
-    const url = URL.createObjectURL(blob);
-    const img = new Image();
-    img.onload = () => {
-      imgRef.current = img;
+  const loadImageFromBlob=(blob)=>{
+    const url=URL.createObjectURL(blob);
+    const img=new Image();
+    img.onload=()=>{
+      imgRef.current=img;
       setNatural({w:img.naturalWidth,h:img.naturalHeight});
       setBgRemoving(false);
       setPhase('annotate');
       URL.revokeObjectURL(url);
     };
-    img.src = url;
+    img.src=url;
   };
 
-  const handleFlatLay = useCallback((file)=>{
+  const handleFlatLay=useCallback((file)=>{
     if (!file||!file.type.startsWith('image/')) return;
-    setLines([]); setColorIdx(0); setShowExport(false); setBgError(null);
+    setLines([]); setColorIdx(0); setShowExport(false); setBgError(null); setLimitMsg(null);
     setIx({mode:'idle',p1:null,p2:null,color:LINE_COLORS[0],dragging:null});
     const reader=new FileReader();
     reader.onload=e=>{
@@ -196,9 +209,9 @@ export default function MeasureTool() {
     reader.readAsDataURL(file);
   },[]);
 
-  const handleFile = useCallback(async (file)=>{
+  const handleFile=useCallback(async(file)=>{
     if (!file||!file.type.startsWith('image/')) return;
-    setLines([]); setColorIdx(0); setShowExport(false); setBgError(null);
+    setLines([]); setColorIdx(0); setShowExport(false); setBgError(null); setLimitMsg(null);
     setIx({mode:'idle',p1:null,p2:null,color:LINE_COLORS[0],dragging:null});
     setBgRemoving(true); setLoadingStep(0);
     let stepIdx=0;
@@ -220,29 +233,34 @@ export default function MeasureTool() {
     reader.readAsDataURL(file);
   },[]);
 
-  const toCanvas = (clientX,clientY)=>{
-    const c=canvasRef.current, r=c.getBoundingClientRect();
-    return {x:(clientX-r.left)*(c.width/r.width), y:(clientY-r.top)*(c.height/r.height)};
+  const toCanvas=(clientX,clientY)=>{
+    const c=canvasRef.current,r=c.getBoundingClientRect();
+    return {x:(clientX-r.left)*(c.width/r.width),y:(clientY-r.top)*(c.height/r.height)};
   };
 
-  const startNewLine = useCallback(()=>{
+  const startNewLine=useCallback(()=>{
+    if (!pro&&lines.length>=FREE_MAX_LINES) {
+      setLimitMsg('Free plan is limited to 4 measurement lines. Upgrade to Pro for unlimited.');
+      return;
+    }
+    setLimitMsg(null);
     const color=LINE_COLORS[colorIdx%LINE_COLORS.length];
     setIx({mode:'placing_p1',p1:null,p2:null,color,dragging:null});
-  },[colorIdx]);
+  },[colorIdx,lines.length,pro]);
 
-  const onTapCanvas = useCallback((clientX,clientY)=>{
+  const onTapCanvas=useCallback((clientX,clientY)=>{
     const pt=toCanvas(clientX,clientY);
     const cur=ixRef.current;
     if (cur.mode==='placing_p1') { setIx(p=>({...p,mode:'placing_p2',p1:pt})); return; }
     if (cur.mode==='placing_p2') { setIx(p=>({...p,mode:'adjusting',p2:pt})); return; }
     if (cur.mode==='adjusting') {
-      const d1=dist(pt,cur.p1), d2=cur.p2?dist(pt,cur.p2):Infinity;
+      const d1=dist(pt,cur.p1),d2=cur.p2?dist(pt,cur.p2):Infinity;
       if (d1<HIT_RADIUS) setIx(p=>({...p,dragging:'p1'}));
       else if (d2<HIT_RADIUS) setIx(p=>({...p,dragging:'p2'}));
     }
   },[]);
 
-  const onMoveCanvas = useCallback((clientX,clientY)=>{
+  const onMoveCanvas=useCallback((clientX,clientY)=>{
     const cur=ixRef.current;
     if (cur.mode==='adjusting'&&cur.dragging) {
       const pt=toCanvas(clientX,clientY);
@@ -250,11 +268,11 @@ export default function MeasureTool() {
     }
   },[]);
 
-  const onReleaseCanvas = useCallback(()=>{
+  const onReleaseCanvas=useCallback(()=>{
     if (ixRef.current.dragging) setIx(p=>({...p,dragging:null}));
   },[]);
 
-  const confirmLine = useCallback(()=>{
+  const confirmLine=useCallback(()=>{
     const cur=ixRef.current;
     if (cur.mode!=='adjusting'||!cur.p1||!cur.p2) return;
     setLines(prev=>[...prev,{name:activeName,value:curValue,unit:curUnit,p1:cur.p1,p2:cur.p2,color:cur.color}]);
@@ -267,11 +285,11 @@ export default function MeasureTool() {
     setIx({mode:'idle',p1:null,p2:null,color:LINE_COLORS[(colorIdx+1)%LINE_COLORS.length],dragging:null});
   },[activeName,curValue,curUnit,colorIdx,curName,useCustom]);
 
-  const cancelLine = useCallback(()=>{
+  const cancelLine=useCallback(()=>{
     setIx({mode:'idle',p1:null,p2:null,color:LINE_COLORS[colorIdx%LINE_COLORS.length],dragging:null});
   },[colorIdx]);
 
-  const undo = ()=>{
+  const undo=()=>{
     if (ix.mode!=='idle') { cancelLine(); return; }
     setLines(p=>p.slice(0,-1)); setColorIdx(c=>Math.max(0,c-1));
   };
@@ -279,24 +297,27 @@ export default function MeasureTool() {
   const updLine=(i,f,v)=>setLines(prev=>prev.map((l,idx)=>idx===i?{...l,[f]:v}:l));
   const delLine=i=>setLines(prev=>prev.filter((_,idx)=>idx!==i));
 
-  const handleExport=()=>{
-    const src=canvasRef.current; if(!src||!imgRef.current) return;
+  const buildExportCanvas=()=>{
+    const src=canvasRef.current; if(!src||!imgRef.current) return null;
     let W=src.width,H=src.height;
     if(aspectRatio==='1:1'){W=Math.max(W,H);H=W;}
     else if(aspectRatio==='4:5'){H=Math.round(W*5/4);}
     else if(aspectRatio==='3:4'){H=Math.round(W*4/3);}
+
     const ROW_H=36,COLS=2,PAD=20;
     const rows=Math.ceil(lines.length/COLS);
     const tableH=lines.length>0?rows*ROW_H+48:0;
-    const infoH=(brand||itemName||notes)?68:0;
+    const infoH=(brand||itemName||notes)?52:0;
+    const WATERMARK_H=28;
     const ec=document.createElement('canvas');
-    ec.width=W; ec.height=H+tableH+infoH;
+    ec.width=W; ec.height=H+tableH+infoH+WATERMARK_H;
     const ctx=ec.getContext('2d');
     ctx.fillStyle='#ffffff'; ctx.fillRect(0,0,W,H);
     const ic=document.createElement('canvas');
     ic.width=src.width; ic.height=src.height;
     renderExportImage(ic,imgRef.current,lines);
     ctx.drawImage(ic,Math.round((W-src.width)/2),Math.round((H-src.height)/2));
+
     if(lines.length>0){
       const tY=H;
       ctx.fillStyle='#f8f6f0'; ctx.fillRect(0,tY,W,tableH);
@@ -316,22 +337,72 @@ export default function MeasureTool() {
         if(col===COLS-1||i===lines.length-1){ctx.fillStyle='#ece9e2'; ctx.fillRect(PAD,tY+28+(row+1)*ROW_H-1,W-PAD*2,1);}
       });
     }
+
     if(infoH>0){
       const iy=H+tableH;
-      ctx.fillStyle='#1a1a1a'; ctx.fillRect(0,iy,W,infoH);
-      ctx.fillStyle='#333'; ctx.fillRect(0,iy,W,1);
-      ctx.textBaseline='top'; ctx.textAlign='left'; let ty=iy+12;
-      if(brand){ctx.font='bold 13px monospace';ctx.fillStyle='#f0ebe0';ctx.fillText(`Brand: ${brand}`,PAD,ty);ty+=18;}
-      if(itemName){ctx.font='bold 13px monospace';ctx.fillStyle='#f0ebe0';ctx.fillText(`Item: ${itemName}`,PAD,ty);ty+=18;}
-      if(notes){ctx.font='11px monospace';ctx.fillStyle='#888';ctx.fillText(`Notes: ${notes}`,PAD,ty);}
-      ctx.font='9px monospace'; ctx.fillStyle='#444'; ctx.textAlign='right';
-      ctx.fillText('MEASURE - Garment Annotation Tool',W-PAD,iy+infoH-12);
+      ctx.fillStyle='#f0ede6'; ctx.fillRect(0,iy,W,infoH);
+      ctx.fillStyle='#e0ddd6'; ctx.fillRect(0,iy,W,1);
+      ctx.textBaseline='middle'; ctx.textAlign='left'; let tx=PAD, ty=iy+infoH/2;
+      const parts=[];
+      if(brand) parts.push(`Brand: ${brand}`);
+      if(itemName) parts.push(`Item: ${itemName}`);
+      if(notes) parts.push(`Notes: ${notes}`);
+      ctx.font='11px monospace'; ctx.fillStyle='#444';
+      ctx.fillText(parts.join('  |  '),tx,ty);
     }
+
+    // Watermark — always present
+    const wy=H+tableH+infoH;
+    ctx.fillStyle='#1a1a1a'; ctx.fillRect(0,wy,W,WATERMARK_H);
+    ctx.fillStyle='#e0ddd6'; ctx.fillRect(0,wy,W,1);
+    ctx.textBaseline='middle'; ctx.textAlign='left';
+    ctx.font='bold 9px monospace'; ctx.letterSpacing='0.15em';
+
+    if(pro){
+      const wmText=customWatermark||'MEASURE';
+      ctx.fillStyle='#e8b84b'; ctx.fillText(wmText,PAD,wy+WATERMARK_H/2);
+      ctx.font='9px monospace'; ctx.fillStyle='#444'; ctx.textAlign='right';
+      ctx.fillText('Garment Annotation Tool',W-PAD,wy+WATERMARK_H/2);
+    } else {
+      ctx.fillStyle='#e8b84b'; ctx.fillText('MEASURE',PAD,wy+WATERMARK_H/2);
+      ctx.font='9px monospace'; ctx.fillStyle='#666'; ctx.textAlign='right';
+      ctx.fillText('Free Version - measure-app-v2-pl2.vercel.app',W-PAD,wy+WATERMARK_H/2);
+    }
+
+    return ec;
+  };
+
+  const handleExport=()=>{
+    if(!pro&&exportCount>=FREE_MAX_EXPORTS_PER_DAY){
+      setLimitMsg(`You've used all 3 free exports for today. Upgrade to Pro for unlimited exports.`);
+      return;
+    }
+    const ec=buildExportCanvas(); if(!ec) return;
     const el=exportRef.current;
     el.width=ec.width; el.height=ec.height;
     el.getContext('2d').drawImage(ec,0,0);
+    if(!pro){
+      incrementExportCount();
+      const newCount=getExportCount();
+      setExportCount(newCount);
+    }
     setShowExport(true);
     setTimeout(()=>exportSectionRef.current?.scrollIntoView({behavior:'smooth',block:'start'}),150);
+  };
+
+  const handleDownload=()=>{
+    const el=exportRef.current; if(!el) return;
+    el.toBlob(blob=>{
+      if(!blob) return;
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url;
+      a.download=`measure-sheet-${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    },'image/png');
   };
 
   const S={
@@ -344,19 +415,21 @@ export default function MeasureTool() {
   const isPlacing   = ix.mode==='placing_p1'||ix.mode==='placing_p2';
   const isAdjusting = ix.mode==='adjusting';
 
-  const instrText = ()=>{
-    if (ix.mode==='idle')        return 'Tap "Add Line" to place a measurement';
-    if (ix.mode==='placing_p1')  return `Tap the START point of "${activeName}"`;
-    if (ix.mode==='placing_p2')  return `Tap the END point of "${activeName}"`;
-    if (ix.mode==='adjusting')   return 'Drag the endpoints to adjust. Tap Confirm when ready.';
+  const instrText=()=>{
+    if(ix.mode==='idle')       return 'Tap "+ Add Line" to place a measurement';
+    if(ix.mode==='placing_p1') return `Tap the START point of "${activeName}"`;
+    if(ix.mode==='placing_p2') return `Tap the END point of "${activeName}"`;
+    if(ix.mode==='adjusting')  return 'Drag endpoints to adjust. Tap Confirm when ready.';
     return '';
   };
-  const instrColor = ()=>{
-    if (ix.mode==='placing_p1') return '#e8b84b';
-    if (ix.mode==='placing_p2') return '#81C784';
-    if (ix.mode==='adjusting')  return '#4FC3F7';
+  const instrColor=()=>{
+    if(ix.mode==='placing_p1') return '#e8b84b';
+    if(ix.mode==='placing_p2') return '#81C784';
+    if(ix.mode==='adjusting')  return '#4FC3F7';
     return '#555';
   };
+
+  const exportsLeft = FREE_MAX_EXPORTS_PER_DAY - exportCount;
 
   return (
     <div style={{background:'#0d0d0d',minHeight:'100vh',color:'#f0ebe0',display:'flex',flexDirection:'column',fontFamily:'monospace'}}>
@@ -382,24 +455,30 @@ export default function MeasureTool() {
         </div>
       )}
 
+      {/* Header */}
       <div style={{borderBottom:'1px solid #1a1a1a',padding:'10px 16px',display:'flex',alignItems:'center',gap:12,flexShrink:0,flexWrap:'wrap'}}>
         <div style={{fontFamily:"'Playfair Display',serif",fontSize:20,fontWeight:700}}>
           MEAS<span style={{color:'#e8b84b'}}>UR</span>E
         </div>
         <div style={{width:1,height:14,background:'#2a2a2a'}}/>
         <div style={{fontSize:9,color:'#444',letterSpacing:'0.18em',textTransform:'uppercase'}}>Garment Annotation Tool</div>
-        {phase==='annotate'&&(
-          <div style={{marginLeft:'auto',display:'flex',gap:6}}>
-            {lines.length>0&&isIdle&&(
-              <button onClick={handleExport} style={{padding:'6px 12px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:9,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>
-                Generate Sheet
-              </button>
-            )}
-            <button onClick={()=>fileRef.current.click()} style={S.ghost}>New Photo</button>
+        <div style={{marginLeft:'auto',display:'flex',gap:6,alignItems:'center'}}>
+          {/* Tier badge */}
+          <div style={{padding:'3px 8px',borderRadius:2,background:pro?'#e8b84b22':'#1a1a1a',border:`1px solid ${pro?'#e8b84b44':'#2a2a2a'}`,fontSize:8,color:pro?'#e8b84b':'#555',letterSpacing:'0.15em',textTransform:'uppercase'}}>
+            {pro?'PRO':`FREE ${exportsLeft > 0 ? `(${exportsLeft} exports left)` : '(0 left)'}`}
           </div>
-        )}
+          {!pro&&(
+            <button onClick={()=>window.location.href='/pricing'} style={{padding:'4px 10px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:8,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>
+              Upgrade
+            </button>
+          )}
+          {phase==='annotate'&&(
+            <button onClick={()=>fileRef.current.click()} style={S.ghost}>New Photo</button>
+          )}
+        </div>
       </div>
 
+      {/* UPLOAD */}
       {phase==='upload'&&(
         <div style={{flex:1,display:'flex',alignItems:'center',justifyContent:'center',padding:40}}>
           <div style={{maxWidth:560,width:'100%',display:'flex',flexDirection:'column',gap:24}}>
@@ -444,6 +523,7 @@ export default function MeasureTool() {
         </div>
       )}
 
+      {/* ANNOTATE */}
       {phase==='annotate'&&(
         <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
 
@@ -468,14 +548,26 @@ export default function MeasureTool() {
 
           <div style={{flex:1,overflowY:'auto',padding:16,display:'flex',flexDirection:'column',gap:12}}>
 
+            {/* Limit message */}
+            {limitMsg&&(
+              <div style={{background:'#1a0a0a',border:'1px solid #c8401a',borderRadius:2,padding:'10px 12px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
+                <span style={{fontSize:10,color:'#EF9A9A'}}>{limitMsg}</span>
+                <button onClick={()=>window.location.href='/pricing'} style={{padding:'4px 10px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:8,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d',whiteSpace:'nowrap'}}>
+                  Upgrade
+                </button>
+              </div>
+            )}
+
+            {/* Instruction bar */}
             <div style={{background:`${instrColor()}11`,border:`1px solid ${instrColor()}33`,borderRadius:2,padding:'10px 12px'}}>
               <div style={{fontSize:10,color:instrColor(),fontWeight:'bold'}}>{instrText()}</div>
             </div>
 
+            {/* Action buttons */}
             <div style={{display:'flex',gap:8}}>
               {isIdle&&(
                 <button onClick={startNewLine} style={{flex:1,padding:'11px',background:'#e8b84b',border:'none',fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>
-                  + Add Line
+                  + Add Line {!pro&&`(${lines.length}/${FREE_MAX_LINES})`}
                 </button>
               )}
               {isAdjusting&&(
@@ -496,6 +588,7 @@ export default function MeasureTool() {
               )}
             </div>
 
+            {/* Measurement name/value */}
             {!isIdle&&(
               <div style={{background:'#080808',border:'1px solid #1e1e1e',borderRadius:2,padding:'13px',display:'flex',flexDirection:'column',gap:10}}>
                 <div>
@@ -518,9 +611,10 @@ export default function MeasureTool() {
               </div>
             )}
 
+            {/* Lines list */}
             {lines.length>0&&(
               <div style={{borderTop:'1px solid #1a1a1a',paddingTop:12}}>
-                <span style={S.lbl}>Lines ({lines.length})</span>
+                <span style={S.lbl}>Lines ({lines.length}{!pro?`/${FREE_MAX_LINES}`:' - unlimited'})</span>
                 <div style={{display:'flex',flexDirection:'column',gap:5}}>
                   {lines.map((line,i)=>(
                     <div key={i} onMouseEnter={()=>setHoverIdx(i)} onMouseLeave={()=>setHoverIdx(null)}
@@ -542,6 +636,7 @@ export default function MeasureTool() {
               </div>
             )}
 
+            {/* Sheet details + export */}
             {lines.length>0&&isIdle&&(
               <div style={{borderTop:'1px solid #1a1a1a',paddingTop:12,display:'flex',flexDirection:'column',gap:8}}>
                 <span style={S.lbl}>Sheet Details</span>
@@ -560,23 +655,30 @@ export default function MeasureTool() {
                 <div><label style={S.lbl}>Brand</label><input type='text' placeholder='e.g. Moschino Jeans' value={brand} onChange={e=>setBrand(e.target.value)} style={S.inp}/></div>
                 <div><label style={S.lbl}>Item</label><input type='text' placeholder='e.g. Love All Over' value={itemName} onChange={e=>setItemName(e.target.value)} style={S.inp}/></div>
                 <div><label style={S.lbl}>Notes</label><input type='text' placeholder='e.g. Condition, colour' value={notes} onChange={e=>setNotes(e.target.value)} style={S.inp}/></div>
+                {pro&&(
+                  <div>
+                    <label style={S.lbl}>Custom Watermark (Pro)</label>
+                    <input type='text' placeholder='e.g. Your Store Name' value={customWatermark} onChange={e=>setCustomWatermark(e.target.value)} style={S.inp}/>
+                  </div>
+                )}
                 <button onClick={handleExport} style={{padding:'11px',background:'#e8b84b',border:'none',fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,letterSpacing:'0.06em',cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>
-                  Generate Sheet
+                  Generate Sheet {!pro&&`(${exportsLeft} left today)`}
                 </button>
               </div>
             )}
 
+            {/* Export preview */}
             <div ref={exportSectionRef} style={{display:showExport?'flex':'none',borderTop:'2px solid #e8b84b44',padding:'24px 0',flexDirection:'column',alignItems:'center',gap:16}}>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:'#e8b84b'}}>Measurement Sheet</div>
               <div style={{display:'flex',gap:8,alignItems:'center'}}>
                 <span style={{fontFamily:'monospace',fontSize:9,color:'#444',letterSpacing:'0.12em',textTransform:'uppercase'}}>Format:</span>
                 <span style={{fontFamily:'monospace',fontSize:9,color:'#e8b84b',letterSpacing:'0.12em'}}>{ASPECT_RATIOS.find(a=>a.id===aspectRatio)?.label}</span>
               </div>
-              <p style={{fontFamily:'monospace',fontSize:10,color:'#555',letterSpacing:'0.1em',textAlign:'center',lineHeight:1.8}}>
-                <strong style={{color:'#888'}}>Long press / Right-click</strong> to save image
-              </p>
               <canvas ref={exportRef} style={{maxWidth:'100%',borderRadius:2,boxShadow:'0 8px 48px rgba(0,0,0,0.8)',border:'1px solid #2a2a2a'}}/>
-              <div style={{display:'flex',gap:8,marginTop:4}}>
+              <div style={{display:'flex',gap:8,marginTop:4,flexWrap:'wrap',justifyContent:'center'}}>
+                <button onClick={handleDownload} style={{padding:'10px 20px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:10,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d',fontWeight:'bold'}}>
+                  Download Image
+                </button>
                 <button onClick={handleExport} style={{...S.ghost,color:'#e8b84b',borderColor:'#e8b84b44'}}>Regenerate</button>
                 <button onClick={()=>setShowExport(false)} style={S.ghost}>Close</button>
               </div>
