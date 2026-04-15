@@ -589,6 +589,7 @@ export default function MeasureTool() {
             </div>
           </div>
         </div>
+      </div>
       )}
 
       <input ref={fileRef} type='file' accept='image/*' style={{display:'none'}} onChange={e=>handleFile(e.target.files[0])}/>
