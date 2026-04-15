@@ -14,8 +14,8 @@ const LINE_COLORS = [
 ];
 
 const HIT_RADIUS = 22;
-const FREE_MAX_LINES = 4;
-const FREE_MAX_EXPORTS_PER_DAY = 3;
+const FREE_MAX_LINES = 999;
+const FREE_MAX_EXPORTS_PER_DAY = 30;
 
 function todayKey() {
   return 'measure_exports_' + new Date().toISOString().slice(0,10);
