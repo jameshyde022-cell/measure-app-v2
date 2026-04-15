@@ -1,13 +1,5 @@
 import { NextResponse } from 'next/server';
 
-export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '10mb',
-    },
-  },
-};
-
 const FRONT_VIEW_PROMPT = `Use the uploaded garment image as the exact garment blueprint.
 
 VIEW REQUIREMENT:
@@ -67,6 +59,8 @@ Background and styling:
 
 Final requirement:
 The result must clearly read as a true front-facing ghost mannequin image, never a mixed or angled view.`;
+
+export const maxDuration = 60;
 
 export async function POST(req) {
   try {
