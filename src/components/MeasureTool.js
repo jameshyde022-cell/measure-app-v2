@@ -135,6 +135,7 @@ export default function MeasureTool() {
   const [pro,setPro]                 = useState(false);
   const [exportCount,setExportCount] = useState(0);
   const [limitMsg,setLimitMsg]       = useState(null);
+  const [gender,setGender]           = useState('female');
 
   const ASPECT_RATIOS = [
     {id:'original', label:'Original',     desc:'As-is'},
@@ -217,7 +218,7 @@ export default function MeasureTool() {
     let stepIdx=0;
     const si=setInterval(()=>{ stepIdx=Math.min(stepIdx+1,4); setLoadingStep(stepIdx); },4000);
     try {
-      const fd=new FormData(); fd.append('image_file',file);
+      const fd=new FormData(); fd.append('image_file',file); fd.append('gender',gender);
       const res=await fetch('/api/ghost-mannequin',{method:'POST',body:fd});
       if (res.ok) { clearInterval(si); loadImageFromBlob(await res.blob()); return; }
       clearInterval(si);
@@ -489,6 +490,15 @@ export default function MeasureTool() {
               <p style={{fontSize:11,color:'#555',lineHeight:1.8}}>
                 Upload a garment photo. Place measurement lines. Generate a professional spec sheet.
               </p>
+            </div>
+            {/* Gender toggle */}
+            <div style={{display:'flex',gap:8,marginBottom:4}}>
+              <div onClick={()=>setGender('female')} style={{flex:1,padding:'8px',border:`1px solid ${gender==='female'?'#e8b84b':'#2a2a2a'}`,borderRadius:2,cursor:'pointer',background:gender==='female'?'#e8b84b11':'#080808',textAlign:'center',transition:'all 0.15s'}}>
+                <div style={{fontSize:11,color:gender==='female'?'#e8b84b':'#555',fontFamily:'monospace',letterSpacing:'0.1em'}}>♀ Women's</div>
+              </div>
+              <div onClick={()=>setGender('male')} style={{flex:1,padding:'8px',border:`1px solid ${gender==='male'?'#4FC3F7':'#2a2a2a'}`,borderRadius:2,cursor:'pointer',background:gender==='male'?'#4FC3F711':'#080808',textAlign:'center',transition:'all 0.15s'}}>
+                <div style={{fontSize:11,color:gender==='male'?'#4FC3F7':'#555',fontFamily:'monospace',letterSpacing:'0.1em'}}>♂ Men's</div>
+              </div>
             </div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
               <div
