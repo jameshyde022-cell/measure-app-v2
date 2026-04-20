@@ -74,39 +74,47 @@ Render the garment in FRONT VIEW only.
 Generate a photorealistic ecommerce ghost-mannequin product image of this garment.
 
 This must NOT look like a flat lay.
-This must NOT look like the garment is lying on a surface.
+This must NOT look like the garment lying on a surface.
 This must NOT look front-pressed or two-dimensional.
 
-The garment must appear as if it is being worn on an invisible mannequin with a realistic MALE body shape only.
+The garment must appear worn on an invisible MALE mannequin only.
 
 Invisible mannequin body shape requirements:
 - masculine torso proportions
-- FLAT MALE CHEST ONLY
-- absolutely no breasts
-- absolutely no bust contour
-- absolutely no female chest projection
 - broad male shoulders
 - straight male ribcage
 - straight-to-tapered male waist
-- realistic male torso volume
-- side seams must wrap around a flat male torso
-- garment must drape over a male chest, not a female bust
-- body presence visible only through garment fit
-- absolutely no visible mannequin or support structure
+
+CHEST REQUIREMENT (CRITICAL):
+- FLAT MALE CHEST ONLY
+- visible male pectoral plane only
+- slight natural pectoral definition permitted
+- chest must be broad and flat, not projected
+- garment must drape over a flat male chest, not breasts
+
+ABSOLUTELY FORBIDDEN:
+- no breasts
+- no bust contour
+- no rounded breast volume
+- no convex bust projection
+- no left and right breast forms
+- no cleavage-like shaping
+- no feminine chest anatomy
+- do not create breast shapes under transparent or sheer fabric
+- render sheer fabric over a flat male pectoral chest only
 
 Critical anti-flat-lay requirements:
 - garment must wrap around a 3D male torso
-- chest must show dimensional structure without breast shaping
+- side seams must curve naturally around a male body
 - openings must show interior depth
 - no flattened symmetry
-- no overhead/tabletop appearance
+- no overhead/tabletop look
 - no paper-doll effect
 - no floating empty shell
 
 Garment accuracy requirements:
 - match the garment exactly as shown in the reference image
-- preserve garment type, silhouette, proportions, and length
-- preserve fabric texture, transparency, pattern placement, seams, closures, trims, pockets, and construction details
+- preserve silhouette, proportions, length, fabric, transparency, pattern placement, seams, closures, trims, pockets, and construction details
 - do not redesign or reinterpret the garment
 
 Fit and drape requirements:
@@ -114,13 +122,6 @@ Fit and drape requirements:
 - realistic tension from shoulders through torso
 - preserve natural folds and fabric behavior
 - do not stiffen, inflate, or overfill the garment
-
-Critical negative requirements:
-- no breasts
-- no bust shaping
-- no feminine mannequin form
-- no female torso anatomy
-- do not interpret the garment as requiring a female body form
 
 Background and styling:
 - clean white studio background
@@ -134,7 +135,7 @@ Background and styling:
 - no props
 
 Final requirement:
-The result must read instantly as premium ghost-mannequin photography on an invisible male torso with a flat male chest, never a female form.`;
+The result must read instantly as premium ghost-mannequin photography on an invisible male torso with a flat male pectoral chest only, never a female bust form.`;
 
 export async function POST(req) {
   try {
