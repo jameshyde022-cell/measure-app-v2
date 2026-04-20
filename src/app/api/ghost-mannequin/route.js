@@ -78,11 +78,12 @@ This must NOT look like a flat lay.
 This must NOT look like the garment is lying on a surface.
 This must NOT look front-pressed or two-dimensional.
 
-The garment must appear as if it is being worn on an invisible mannequin with a realistic male body shape, so the clothing shows real three-dimensional body form.
+The garment must appear as if it is being worn on an invisible male mannequin with a realistic male body shape, so the clothing shows real three-dimensional body form.
 
-Invisible mannequin body shape requirements:
+Invisible male mannequin body shape requirements:
 - masculine torso proportions
-- natural male chest structure (not exaggerated)
+- FLAT male chest — absolutely no breast shape, no bust projection, no rounded chest curvature
+- no feminine chest contour of any kind, even through sheer or lace fabric
 - broader shoulder line
 - straight-to-tapered male waist where applicable
 - realistic ribcage and torso volume
