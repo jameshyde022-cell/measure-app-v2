@@ -1,4 +1,5 @@
 import './globals.css'
+import { Analytics } from '@vercel/analytics/react'
 export const metadata = {
   title: 'MEASURE — Garment Annotation Tool',
   description: 'Professional garment measurement annotation for clothing resellers. Click two points, enter your value, export a spec sheet.',
@@ -19,7 +20,7 @@ export default function RootLayout({ children }) {
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet" />
         <meta name="theme-color" content="#e8b84b" />
       </head>
-      <body>{children}</body>
+      <body>{children}<Analytics /></body>
     </html>
   )
 }
