@@ -646,45 +646,59 @@ export default function MeasureTool() {
               )}
             </div>
 
-            {/* Model Dress-Up */}
+            {/* Model Dress-Up — Pro Only */}
             <div style={{borderTop:'1px solid #1a1a1a',paddingTop:20,display:'flex',flexDirection:'column',gap:12}}>
               <div style={{display:'flex',alignItems:'center',gap:8}}>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:'#f0ebe0'}}>Model Dress-Up</div>
+                <div style={{padding:'2px 7px',background:'#e8b84b22',border:'1px solid #e8b84b44',borderRadius:2,fontSize:8,color:'#e8b84b',fontFamily:'monospace',letterSpacing:'0.12em',textTransform:'uppercase'}}>Pro</div>
               </div>
               <div style={{fontSize:9,color:'#555',letterSpacing:'0.12em',lineHeight:1.8,textTransform:'uppercase'}}>Upload a garment photo to generate a professional model photo styled for ecommerce.</div>
-              <div
-                onClick={()=>modelFileRef.current.click()}
-                onDragOver={e=>{e.preventDefault();}}
-                onDrop={e=>{e.preventDefault();handleModelDressUp(e.dataTransfer.files[0]);}}
-                style={{border:'2px dashed #e8b84b44',borderRadius:4,padding:'28px 20px',textAlign:'center',cursor:'pointer',transition:'border-color 0.2s',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}
-              >
-                <div style={{fontSize:30}}>👗</div>
-                <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,color:'#f0ebe0'}}>Upload Garment Photo</div>
-                <div style={{fontSize:9,color:'#555',letterSpacing:'0.12em',textTransform:'uppercase'}}>Generates professional model ecommerce photo</div>
-              </div>
-              {modelGenerating&&(
-                <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px',background:'#080808',border:'1px solid #1e1e1e',borderRadius:2}}>
-                  <div style={{width:18,height:18,borderRadius:'50%',border:'2px solid transparent',borderTopColor:'#e8b84b',animation:'spin 0.9s linear infinite',flexShrink:0}}/>
-                  <span style={{fontFamily:'monospace',fontSize:10,color:'#e8b84b',letterSpacing:'0.1em'}}>Generating model photo — this may take 20–30 seconds...</span>
+              {!pro ? (
+                <div style={{border:'1px solid #2a2a2a',borderRadius:4,padding:'24px 20px',textAlign:'center',display:'flex',flexDirection:'column',alignItems:'center',gap:10,background:'#080808'}}>
+                  <div style={{fontSize:24}}>👗</div>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,color:'#555'}}>Pro Feature</div>
+                  <div style={{fontSize:9,color:'#444',letterSpacing:'0.1em',textTransform:'uppercase'}}>Upgrade to generate model dress-up images</div>
+                  <button onClick={()=>window.location.href='/pricing'} style={{marginTop:4,padding:'8px 18px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:9,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d',fontWeight:'bold'}}>
+                    Upgrade to Pro
+                  </button>
                 </div>
-              )}
-              {modelError&&(
-                <div style={{background:'#1a0a0a',border:'1px solid #c8401a',borderRadius:2,padding:'10px 12px'}}>
-                  <span style={{fontFamily:'monospace',fontSize:9,color:'#EF9A9A'}}>{modelError}</span>
-                </div>
-              )}
-              {modelResult&&(
-                <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:12,padding:'16px',background:'#080808',border:'1px solid #2a2a2a',borderRadius:2}}>
-                  <img src={modelResult} alt="Model dress-up" style={{maxWidth:'100%',borderRadius:2,boxShadow:'0 4px 24px rgba(0,0,0,0.6)'}}/>
-                  <div style={{display:'flex',gap:8}}>
-                    <button onClick={handleModelDownload} style={{padding:'10px 20px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:10,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d',fontWeight:'bold'}}>
-                      Download
-                    </button>
-                    <button onClick={()=>{setModelResult(null);setModelError(null);}} style={{padding:'10px 14px',background:'transparent',border:'1px solid #1e1e1e',fontFamily:'monospace',fontSize:9,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#555'}}>
-                      Clear
-                    </button>
+              ) : (
+                <>
+                  <div
+                    onClick={()=>modelFileRef.current.click()}
+                    onDragOver={e=>{e.preventDefault();}}
+                    onDrop={e=>{e.preventDefault();handleModelDressUp(e.dataTransfer.files[0]);}}
+                    style={{border:'2px dashed #e8b84b44',borderRadius:4,padding:'28px 20px',textAlign:'center',cursor:'pointer',transition:'border-color 0.2s',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}
+                  >
+                    <div style={{fontSize:30}}>👗</div>
+                    <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,color:'#f0ebe0'}}>Upload Garment Photo</div>
+                    <div style={{fontSize:9,color:'#555',letterSpacing:'0.12em',textTransform:'uppercase'}}>Generates professional model ecommerce photo</div>
                   </div>
-                </div>
+                  {modelGenerating&&(
+                    <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px',background:'#080808',border:'1px solid #1e1e1e',borderRadius:2}}>
+                      <div style={{width:18,height:18,borderRadius:'50%',border:'2px solid transparent',borderTopColor:'#e8b84b',animation:'spin 0.9s linear infinite',flexShrink:0}}/>
+                      <span style={{fontFamily:'monospace',fontSize:10,color:'#e8b84b',letterSpacing:'0.1em'}}>Generating model photo — this may take 20–30 seconds...</span>
+                    </div>
+                  )}
+                  {modelError&&(
+                    <div style={{background:'#1a0a0a',border:'1px solid #c8401a',borderRadius:2,padding:'10px 12px'}}>
+                      <span style={{fontFamily:'monospace',fontSize:9,color:'#EF9A9A'}}>{modelError}</span>
+                    </div>
+                  )}
+                  {modelResult&&(
+                    <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:12,padding:'16px',background:'#080808',border:'1px solid #2a2a2a',borderRadius:2}}>
+                      <img src={modelResult} alt="Model dress-up" style={{maxWidth:'100%',borderRadius:2,boxShadow:'0 4px 24px rgba(0,0,0,0.6)'}}/>
+                      <div style={{display:'flex',gap:8}}>
+                        <button onClick={handleModelDownload} style={{padding:'10px 20px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:10,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d',fontWeight:'bold'}}>
+                          Download
+                        </button>
+                        <button onClick={()=>{setModelResult(null);setModelError(null);}} style={{padding:'10px 14px',background:'transparent',border:'1px solid #1e1e1e',fontFamily:'monospace',fontSize:9,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#555'}}>
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
 
@@ -747,7 +761,8 @@ export default function MeasureTool() {
                   <button onClick={cancelLine} style={{flex:1,padding:'11px',background:'transparent',border:'1px solid #c8401a',fontFamily:'monospace',fontSize:9,letterSpacing:'0.1em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#EF9A9A'}}>
                     Cancel
                   </button>
-              </>
+                </>
+              )}
               {isPlacing&&(
                 <button onClick={cancelLine} style={{...S.ghost,flex:1}}>Cancel</button>
               )}
