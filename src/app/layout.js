@@ -1,5 +1,5 @@
 import './globals.css'
-import { Analytics } from '@vercel/analytics/react'
+import { Analytics } from '@vercel/analytics/next'
 export const metadata = {
   title: 'MEASURE — Garment Annotation Tool',
   description: 'Professional garment measurement annotation for clothing resellers. Click two points, enter your value, export a spec sheet.',
