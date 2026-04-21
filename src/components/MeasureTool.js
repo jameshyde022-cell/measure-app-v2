@@ -646,24 +646,13 @@ export default function MeasureTool() {
               )}
             </div>
 
-            {/* Model Dress-Up — Pro Only */}
+            {/* Model Dress-Up */}
             <div style={{borderTop:'1px solid #1a1a1a',paddingTop:20,display:'flex',flexDirection:'column',gap:12}}>
               <div style={{display:'flex',alignItems:'center',gap:8}}>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:'#f0ebe0'}}>Model Dress-Up</div>
-                <div style={{padding:'2px 7px',background:'#e8b84b22',border:'1px solid #e8b84b44',borderRadius:2,fontSize:8,color:'#e8b84b',fontFamily:'monospace',letterSpacing:'0.12em',textTransform:'uppercase'}}>Pro</div>
               </div>
               <div style={{fontSize:9,color:'#555',letterSpacing:'0.12em',lineHeight:1.8,textTransform:'uppercase'}}>Upload a garment photo to generate a professional model photo styled for ecommerce.</div>
-              {!pro ? (
-                <div style={{border:'1px solid #2a2a2a',borderRadius:4,padding:'24px 20px',textAlign:'center',display:'flex',flexDirection:'column',alignItems:'center',gap:10,background:'#080808'}}>
-                  <div style={{fontSize:24}}>👗</div>
-                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,color:'#555'}}>Pro Feature</div>
-                  <div style={{fontSize:9,color:'#444',letterSpacing:'0.1em',textTransform:'uppercase'}}>Upgrade to generate model dress-up images</div>
-                  <button onClick={()=>window.location.href='/pricing'} style={{marginTop:4,padding:'8px 18px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:9,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d',fontWeight:'bold'}}>
-                    Upgrade to Pro
-                  </button>
-                </div>
-              ) : (
-                <>
+              <>
                   <div
                     onClick={()=>modelFileRef.current.click()}
                     onDragOver={e=>{e.preventDefault();}}
@@ -698,8 +687,7 @@ export default function MeasureTool() {
                       </div>
                     </div>
                   )}
-                </>
-              )}
+              </>
             </div>
 
           </div>
@@ -761,8 +749,7 @@ export default function MeasureTool() {
                   <button onClick={cancelLine} style={{flex:1,padding:'11px',background:'transparent',border:'1px solid #c8401a',fontFamily:'monospace',fontSize:9,letterSpacing:'0.1em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#EF9A9A'}}>
                     Cancel
                   </button>
-                </>
-              )}
+              </>
               {isPlacing&&(
                 <button onClick={cancelLine} style={{...S.ghost,flex:1}}>Cancel</button>
               )}
