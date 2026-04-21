@@ -316,7 +316,7 @@ export default function MeasureTool() {
     const ROW_H=36,COLS=2,PAD=20;
     const rows=Math.ceil(lines.length/COLS);
     const tableH=lines.length>0?rows*ROW_H+48:0;
-    const infoH=(brand||itemName||notes)?52:0;
+    const infoH=(brand||itemName||notes)?80:0;
     const WATERMARK_H=28;
     const ec=document.createElement('canvas');
     ec.width=W; ec.height=H+tableH+infoH+WATERMARK_H;
@@ -351,13 +351,27 @@ export default function MeasureTool() {
       const iy=H+tableH;
       ctx.fillStyle='#f0ede6'; ctx.fillRect(0,iy,W,infoH);
       ctx.fillStyle='#e0ddd6'; ctx.fillRect(0,iy,W,1);
-      ctx.textBaseline='middle'; ctx.textAlign='left'; let tx=PAD, ty=iy+infoH/2;
+      ctx.font='11px monospace'; ctx.fillStyle='#444';
+      ctx.textBaseline='middle'; ctx.textAlign='left';
       const parts=[];
       if(brand) parts.push(`Brand: ${brand}`);
       if(itemName) parts.push(`Item: ${itemName}`);
       if(notes) parts.push(`Notes: ${notes}`);
-      ctx.font='11px monospace'; ctx.fillStyle='#444';
-      ctx.fillText(parts.join('  |  '),tx,ty);
+      // Wrap text across multiple lines if needed
+      const maxW=W-PAD*2;
+      const lineH=18;
+      const words=parts.join('  |  ').split(' ');
+      let line='', lines=[], word;
+      for(let i=0;i<words.length;i++){
+        word=words[i];
+        const test=line?line+' '+word:word;
+        if(ctx.measureText(test).width>maxW&&line){lines.push(line);line=word;}
+        else{line=test;}
+      }
+      if(line) lines.push(line);
+      const totalH=lines.length*lineH;
+      const startY=iy+(infoH-totalH)/2+lineH/2;
+      lines.forEach((l,i)=>ctx.fillText(l,PAD,startY+i*lineH));
     }
 
     // Watermark — always present
