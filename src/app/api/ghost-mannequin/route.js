@@ -137,11 +137,127 @@ Background and styling:
 Final requirement:
 The result must read instantly as premium ghost-mannequin photography on an invisible male torso with a flat male pectoral chest only, never a female bust form.`;
 
+const FEMALE_REAR_PROMPT = `Use the uploaded garment image as the exact garment blueprint.
+The uploaded image is the BACK SIDE of the garment photographed facing the camera as a standard product image.
+
+Generate a photorealistic ecommerce ghost-mannequin image showing an invisible mannequin viewed FROM BEHIND.
+
+CRITICAL ORIENTATION REQUIREMENT:
+- the camera must be looking at the mannequin's back
+- the mannequin must be facing away from the camera
+- show the back of the invisible mannequin only
+- show the uploaded garment being worn on the mannequin's back
+- do not generate a front-facing mannequin
+- do not rotate to a front view
+- do not mix front and back information
+- straight-on rear view only
+- no angled or 3/4 rear view
+
+Generate true ghost-mannequin photography, not a flat lay.
+The garment must appear worn on an invisible mannequin with feminine swimsuit-model body shape.
+
+Invisible mannequin body shape requirements:
+- natural female upper back contour
+- natural shoulder blade structure
+- tapered waist where applicable
+- realistic back torso volume
+- natural shoulder slope
+- side seams wrapping naturally around the body
+- body presence visible only through garment fit
+- absolutely no visible mannequin structure
+
+Critical anti-flat-lay requirements:
+- garment must wrap around a 3D back torso
+- back neckline and armholes must show interior depth where applicable
+- no flattened symmetry
+- no tabletop or laid-flat appearance
+- no floating empty shell
+
+Garment accuracy requirements:
+- preserve the uploaded back view exactly
+- preserve all back-specific details exactly
+- preserve seams, closures, cutouts, trims, hardware, fabric texture, and pattern placement
+- do not redesign or simplify anything
+
+Background and styling:
+- clean white studio background
+- centered ecommerce product shot
+- soft even professional lighting
+- no model
+- no hanger
+- no props
+
+Final requirement:
+The final image must read instantly as a ghost mannequin photographed from behind, showing the mannequin's back wearing the uploaded back-view garment.`;
+
+const MALE_REAR_PROMPT = `Use the uploaded garment image as the exact garment blueprint.
+The uploaded image is the BACK SIDE of the garment photographed facing the camera as a standard product image.
+
+Generate a photorealistic ecommerce ghost-mannequin image showing an invisible MALE mannequin viewed FROM BEHIND.
+
+CRITICAL ORIENTATION REQUIREMENT:
+- the camera must be looking at the mannequin's back
+- the mannequin must be facing away from the camera
+- show the back of the invisible male mannequin only
+- show the uploaded garment being worn on the mannequin's back
+- do not generate a front-facing mannequin
+- do not rotate to a front view
+- do not mix front and back information
+- straight-on rear view only
+- no angled or 3/4 rear view
+
+Generate true ghost-mannequin photography, not a flat lay.
+The garment must appear worn on an invisible mannequin with realistic MALE body shape only.
+
+Invisible mannequin body shape requirements:
+- masculine back proportions
+- broad male shoulders
+- natural upper back contour
+- subtle male shoulder blade structure where applicable
+- straight male ribcage
+- straight-to-tapered male waist where applicable
+- realistic male back torso volume
+- side seams wrapping naturally around a male body
+- body presence visible only through garment fit
+- absolutely no visible mannequin structure
+
+Critical anti-flat-lay requirements:
+- garment must wrap around a 3D male back torso
+- rear neckline and armholes must show interior depth where applicable
+- no flattened symmetry
+- no tabletop or laid-flat appearance
+- no paper-doll effect
+- no floating empty shell
+
+Garment accuracy requirements:
+- preserve the uploaded back view exactly
+- preserve all back-specific details exactly
+- preserve seams, closures, cutouts, trims, hardware, fabric texture, and pattern placement
+- do not redesign or simplify anything
+
+Fit and drape requirements:
+- natural gravity-based drape
+- realistic tension from shoulders through upper back and torso
+- preserve natural folds and fabric behavior
+- do not stiffen, inflate, or overfill the garment
+
+Background and styling:
+- clean white studio background
+- centered ecommerce product shot
+- soft even professional lighting
+- no model
+- no hanger
+- no props
+
+Final requirement:
+The final image must read instantly as premium ghost-mannequin photography photographed from behind, showing an invisible male mannequin's back wearing the uploaded back-view garment.`;
+
 export async function POST(req) {
   try {
     const formData = await req.formData();
     const imageFile = formData.get('image_file');
     const gender = formData.get('gender') || 'female';
+    const view = formData.get('view') || 'front';
 
     if (!imageFile) {
       return NextResponse.json({ error: 'No image provided' }, { status: 400 });
@@ -156,7 +272,11 @@ export async function POST(req) {
       return NextResponse.json({ error: 'Gemini API key not configured' }, { status: 500 });
     }
 
-    const prompt = gender === 'male' ? MALE_PROMPT : FEMALE_PROMPT;
+    let prompt;
+    if (gender === 'male' && view === 'rear') prompt = MALE_REAR_PROMPT;
+    else if (gender === 'female' && view === 'rear') prompt = FEMALE_REAR_PROMPT;
+    else if (gender === 'male') prompt = MALE_PROMPT;
+    else prompt = FEMALE_PROMPT;
 
     const models = [
       'gemini-3.1-flash-image-preview',

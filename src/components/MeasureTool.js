@@ -136,6 +136,9 @@ export default function MeasureTool() {
   const [exportCount,setExportCount] = useState(0);
   const [limitMsg,setLimitMsg]       = useState(null);
   const [gender,setGender]           = useState('female');
+  const [rearGenerating,setRearGenerating] = useState(false);
+  const [rearResult,setRearResult]   = useState(null);
+  const [rearError,setRearError]     = useState(null);
 
   const ASPECT_RATIOS = [
     {id:'original', label:'Original',     desc:'As-is'},
@@ -157,6 +160,7 @@ export default function MeasureTool() {
   const imgRef           = useRef(null);
   const fileRef          = useRef(null);
   const flatLayRef       = useRef(null);
+  const rearFileRef      = useRef(null);
   const exportSectionRef = useRef(null);
   const ixRef            = useRef(ix);
   ixRef.current          = ix;
@@ -406,6 +410,40 @@ export default function MeasureTool() {
     },'image/png');
   };
 
+
+  const handleRearView = async (file) => {
+    if (!file || !file.type.startsWith("image/")) return;
+    setRearGenerating(true);
+    setRearResult(null);
+    setRearError(null);
+    try {
+      const fd = new FormData();
+      fd.append("image_file", file);
+      fd.append("gender", gender);
+      fd.append("view", "rear");
+      const res = await fetch("/api/ghost-mannequin", { method: "POST", body: fd });
+      if (res.ok) {
+        const blob = await res.blob();
+        setRearResult(URL.createObjectURL(blob));
+      } else {
+        const err = await res.json().catch(() => ({}));
+        setRearError(err.error || "Rear view generation failed.");
+      }
+    } catch (e) {
+      setRearError("Rear view generation failed.");
+    }
+    setRearGenerating(false);
+  };
+
+  const handleRearDownload = () => {
+    if (!rearResult) return;
+    const a = document.createElement("a");
+    a.href = rearResult;
+    a.download = `rear-view-${Date.now()}.png`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
   const S={
     lbl:{fontFamily:'monospace',fontSize:9,letterSpacing:'0.18em',textTransform:'uppercase',color:'#555',marginBottom:5,display:'block'},
     inp:{fontFamily:'monospace',fontSize:12,padding:'7px 10px',border:'1px solid #2a2a2a',borderRadius:2,background:'#080808',color:'#f0ebe0',width:'100%'},
@@ -529,6 +567,47 @@ export default function MeasureTool() {
             <div style={{fontSize:9,color:'#333',letterSpacing:'0.12em',textAlign:'center',textTransform:'uppercase'}}>
               JPG - PNG - WEBP - Drop anywhere above
             </div>
+
+            {/* Rear View Generator */}
+            <div style={{borderTop:'1px solid #1a1a1a',paddingTop:20,display:'flex',flexDirection:'column',gap:12}}>
+              <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:'#f0ebe0'}}>Rear View Ghost Mannequin</div>
+              <div style={{fontSize:9,color:'#555',letterSpacing:'0.12em',lineHeight:1.8,textTransform:'uppercase'}}>Upload the back-side product photo to generate a rear-facing ghost mannequin image.</div>
+              <div
+                onClick={()=>rearFileRef.current.click()}
+                onDragOver={e=>{e.preventDefault();}}
+                onDrop={e=>{e.preventDefault();handleRearView(e.dataTransfer.files[0]);}}
+                style={{border:'2px dashed #2a2a2a',borderRadius:4,padding:'28px 20px',textAlign:'center',cursor:'pointer',transition:'border-color 0.2s',display:'flex',flexDirection:'column',alignItems:'center',gap:10}}
+              >
+                <div style={{fontSize:30}}>🔄</div>
+                <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,color:'#f0ebe0'}}>Upload Back Photo</div>
+                <div style={{fontSize:9,color:'#555',letterSpacing:'0.12em',textTransform:'uppercase'}}>Generates rear-facing ghost mannequin</div>
+              </div>
+              {rearGenerating&&(
+                <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px',background:'#080808',border:'1px solid #1e1e1e',borderRadius:2}}>
+                  <div style={{width:18,height:18,borderRadius:'50%',border:'2px solid transparent',borderTopColor:'#e8b84b',animation:'spin 0.9s linear infinite',flexShrink:0}}/>
+                  <span style={{fontFamily:'monospace',fontSize:10,color:'#e8b84b',letterSpacing:'0.1em'}}>Generating rear view — this may take 20–30 seconds...</span>
+                </div>
+              )}
+              {rearError&&(
+                <div style={{background:'#1a0a0a',border:'1px solid #c8401a',borderRadius:2,padding:'10px 12px'}}>
+                  <span style={{fontFamily:'monospace',fontSize:9,color:'#EF9A9A'}}>{rearError}</span>
+                </div>
+              )}
+              {rearResult&&(
+                <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:12,padding:'16px',background:'#080808',border:'1px solid #2a2a2a',borderRadius:2}}>
+                  <img src={rearResult} alt="Rear view" style={{maxWidth:'100%',borderRadius:2,boxShadow:'0 4px 24px rgba(0,0,0,0.6)'}}/>
+                  <div style={{display:'flex',gap:8}}>
+                    <button onClick={handleRearDownload} style={{padding:'10px 20px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:10,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d',fontWeight:'bold'}}>
+                      Download Rear View
+                    </button>
+                    <button onClick={()=>{setRearResult(null);setRearError(null);}} style={{padding:'10px 14px',background:'transparent',border:'1px solid #1e1e1e',fontFamily:'monospace',fontSize:9,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#555'}}>
+                      Clear
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
       )}
@@ -700,6 +779,7 @@ export default function MeasureTool() {
 
       <input ref={fileRef} type='file' accept='image/*' style={{display:'none'}} onChange={e=>handleFile(e.target.files[0])}/>
       <input ref={flatLayRef} type='file' accept='image/*' style={{display:'none'}} onChange={e=>handleFlatLay(e.target.files[0])}/>
+      <input ref={rearFileRef} type='file' accept='image/*' style={{display:'none'}} onChange={e=>handleRearView(e.target.files[0])}/>
 
       <div style={{borderTop:'1px solid #111',padding:'7px 24px',display:'flex',justifyContent:'space-between',flexShrink:0}}>
         <span style={{fontSize:8,color:'#1e1e1e'}}>MEASURE - Garment Annotation Tool</span>
