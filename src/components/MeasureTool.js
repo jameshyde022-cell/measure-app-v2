@@ -568,7 +568,7 @@ export default function MeasureTool() {
           )}
           <button
             onClick={async()=>{await fetch('/api/auth/logout',{method:'POST'});window.location.href='/login';}}
-            style={{background:'none',border:'none',fontFamily:'monospace',fontSize:10,color:'#555',cursor:'pointer',letterSpacing:'0.08em',padding:'2px 4px'}}
+            style={{background:'none',border:'none',fontFamily:'monospace',fontSize:11,color:'#f0ebe0',cursor:'pointer',letterSpacing:'0.08em',padding:'2px 4px',textDecoration:'underline'}}
           >
             Sign out
           </button>
