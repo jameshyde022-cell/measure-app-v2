@@ -499,7 +499,7 @@ export default function MeasureTool() {
   const S={
     lbl:{fontFamily:'monospace',fontSize:9,letterSpacing:'0.18em',textTransform:'uppercase',color:'#555',marginBottom:5,display:'block'},
     inp:{fontFamily:'monospace',fontSize:12,padding:'7px 10px',border:'1px solid #2a2a2a',borderRadius:2,background:'#080808',color:'#f0ebe0',width:'100%'},
-    ghost:{padding:'6px 10px',background:'transparent',border:'1px solid #1e1e1e',fontFamily:'monospace',fontSize:9,letterSpacing:'0.12em',textTransform:'uppercase',color:'#555',cursor:'pointer',borderRadius:2},
+    ghost:{padding:'6px 10px',background:'transparent',border:'1px solid #2a2a2a',fontFamily:'monospace',fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase',color:'#aaaaaa',cursor:'pointer',borderRadius:2},
   };
 
   const isIdle      = ix.mode==='idle';
@@ -555,7 +555,7 @@ export default function MeasureTool() {
         <div style={{fontSize:9,color:'#444',letterSpacing:'0.18em',textTransform:'uppercase'}}>Garment Annotation Tool</div>
         <div style={{marginLeft:'auto',display:'flex',gap:6,alignItems:'center'}}>
           {/* Tier badge */}
-          <div style={{padding:'3px 8px',borderRadius:2,background:pro?'#e8b84b22':'#1a1a1a',border:`1px solid ${pro?'#e8b84b44':'#2a2a2a'}`,fontSize:8,color:pro?'#e8b84b':'#555',letterSpacing:'0.15em',textTransform:'uppercase'}}>
+          <div style={{padding:'3px 8px',borderRadius:2,background:pro?'#e8b84b22':'#1a1a1a',border:`1px solid ${pro?'#e8b84b44':'#2a2a2a'}`,fontSize:10,color:pro?'#e8b84b':'#aaaaaa',letterSpacing:'0.15em',textTransform:'uppercase'}}>
             {pro?'PRO':`FREE ${exportsLeft > 0 ? `(${exportsLeft} exports left)` : '(0 left)'}`}
           </div>
           {!pro&&(
