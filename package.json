@@ -13,10 +13,12 @@
     "@capacitor/cli": "^8.3.0",
     "@capacitor/core": "^8.3.0",
     "@google/genai": "^1.50.0",
+    "@supabase/supabase-js": "^2.105.1",
     "@vercel/analytics": "^2.0.1",
     "next": "14.2.3",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "stripe": "^22.1.0"
   },
   "devDependencies": {
     "@types/node": "^20",

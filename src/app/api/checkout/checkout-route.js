@@ -2,13 +2,6 @@ import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { createClient } from '@supabase/supabase-js';
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
-);
-
 const PRICE_ID_MONTHLY = process.env.STRIPE_PRICE_ID;
 // TODO: Create a yearly price in your Stripe dashboard (Products → your product → Add price →
 // Recurring, every year, $29.99) then add STRIPE_PRICE_ID_YEARLY=price_xxxx to your env vars.
@@ -17,6 +10,11 @@ const PRICE_ID_YEARLY = process.env.STRIPE_PRICE_ID_YEARLY;
 const AFFILIATE_COUPON_ID = 'Ag7Ld0Fp'; // 1 month free (100% off once)
 
 export async function POST(req) {
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+  const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+  );
   try {
     const { email, referralCode, plan } = await req.json();
 
