@@ -14,8 +14,8 @@ const LINE_COLORS = [
 ];
 
 const HIT_RADIUS = 22;
-const FREE_MAX_LINES = 999;
-const FREE_MAX_EXPORTS_PER_DAY = 30;
+const FREE_MAX_LINES = 4;
+const FREE_MAX_EXPORTS_PER_DAY = 3;
 
 function todayKey() {
   return 'measure_exports_' + new Date().toISOString().slice(0,10);
@@ -844,8 +844,20 @@ export default function MeasureTool() {
                     <input type='text' placeholder='e.g. Your Store Name' value={customWatermark} onChange={e=>setCustomWatermark(e.target.value)} style={S.inp}/>
                   </div>
                 )}
-                <button onClick={handleExport} style={{padding:'11px',background:'#e8b84b',border:'none',fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,letterSpacing:'0.06em',cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>
-                  Generate Sheet {!pro&&`(${exportsLeft} left today)`}
+                {!pro&&(
+                  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'7px 10px',background:exportsLeft===0?'#1a0808':'#080808',border:`1px solid ${exportsLeft===0?'#c8401a44':exportsLeft===1?'#e8b84b33':'#1e1e1e'}`,borderRadius:2}}>
+                    <span style={{fontFamily:'monospace',fontSize:10,color:exportsLeft===0?'#EF9A9A':exportsLeft===1?'#e8b84b':'#555',letterSpacing:'0.04em'}}>
+                      {exportsLeft>0
+                        ?`${exportsLeft} export${exportsLeft===1?'':'s'} remaining today`
+                        :'No exports remaining today'}
+                    </span>
+                    <span style={{fontFamily:'monospace',fontSize:9,color:exportsLeft===0?'#c8401a':'#333',letterSpacing:'0.08em'}}>
+                      {exportCount}/{FREE_MAX_EXPORTS_PER_DAY}
+                    </span>
+                  </div>
+                )}
+                <button onClick={handleExport} style={{padding:'11px',background:exportsLeft===0&&!pro?'#1a1a1a':'#e8b84b',border:`1px solid ${exportsLeft===0&&!pro?'#2a2a2a':'transparent'}`,fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,letterSpacing:'0.06em',cursor:exportsLeft===0&&!pro?'not-allowed':'pointer',borderRadius:2,color:exportsLeft===0&&!pro?'#444':'#0d0d0d'}}>
+                  Generate Sheet
                 </button>
               </div>
             )}
