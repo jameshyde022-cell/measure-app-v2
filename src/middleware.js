@@ -31,18 +31,24 @@ async function verifySession(token) {
 }
 
 export async function middleware(request) {
+  const { pathname } = request.nextUrl
   const token = request.cookies.get('measure_session')?.value
 
   if (!token || !(await verifySession(token))) {
+    console.log(`[middleware] unauthenticated request to ${pathname} — redirecting to /login`)
     const loginUrl = request.nextUrl.clone()
     loginUrl.pathname = '/login'
-    loginUrl.searchParams.set('next', request.nextUrl.pathname)
+    loginUrl.searchParams.set('next', pathname)
     return NextResponse.redirect(loginUrl)
   }
 
+  console.log(`[middleware] valid session for ${pathname}`)
   return NextResponse.next()
 }
 
 export const config = {
-  matcher: ['/app/:path*'],
+  // '/app' covers the exact path; '/app/:path*' covers all sub-paths.
+  // Using both is necessary because :path* (zero-or-more) is treated
+  // inconsistently across Next.js 14 patch versions for the exact root path.
+  matcher: ['/app', '/app/:path*'],
 }
