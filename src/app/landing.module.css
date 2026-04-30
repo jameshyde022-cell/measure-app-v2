@@ -1,0 +1,243 @@
+/* ── Navigation ─────────────────────────────────────────────────────────── */
+
+.nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 18px 32px;
+  border-bottom: 1px solid #1e1e1e;
+  position: sticky;
+  top: 0;
+  background: rgba(13, 13, 13, 0.96);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  z-index: 100;
+}
+
+.navLinks {
+  display: flex;
+  gap: 28px;
+  align-items: center;
+}
+
+.navLink {
+  color: #888;
+  text-decoration: none;
+  font-size: 14px;
+  letter-spacing: 0.03em;
+  transition: color 0.2s;
+}
+
+.navLink:hover {
+  color: #f0ebe0;
+}
+
+.navCta {
+  background: #e8b84b;
+  color: #0d0d0d;
+  padding: 8px 18px;
+  border-radius: 6px;
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  transition: opacity 0.2s;
+}
+
+.navCta:hover {
+  opacity: 0.88;
+}
+
+/* ── Hero ────────────────────────────────────────────────────────────────── */
+
+.heroButtons {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.heroVisual {
+  display: flex;
+  gap: 24px;
+  align-items: stretch;
+  margin-top: 64px;
+}
+
+.heroArrow {
+  font-size: 28px;
+  color: #e8b84b;
+  font-weight: 300;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+
+.btnPrimary {
+  display: inline-block;
+  background: #e8b84b;
+  color: #0d0d0d;
+  padding: 14px 28px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  transition: opacity 0.2s;
+}
+
+.btnPrimary:hover {
+  opacity: 0.88;
+}
+
+.btnSecondary {
+  display: inline-block;
+  background: transparent;
+  color: #f0ebe0;
+  padding: 14px 28px;
+  border-radius: 8px;
+  text-decoration: none;
+  font-size: 15px;
+  border: 1px solid #2a2a2a;
+  letter-spacing: 0.03em;
+  transition: border-color 0.2s;
+}
+
+.btnSecondary:hover {
+  border-color: #444;
+}
+
+/* ── Grids ───────────────────────────────────────────────────────────────── */
+
+.threeGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 20px;
+}
+
+.fourGrid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+}
+
+.pricingGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+  align-items: start;
+}
+
+/* ── FAQ ─────────────────────────────────────────────────────────────────── */
+
+.faqItem {
+  border-bottom: 1px solid #1e1e1e;
+}
+
+.faqItem:first-child {
+  border-top: 1px solid #1e1e1e;
+}
+
+.faqSummary {
+  padding: 20px 0;
+  cursor: pointer;
+  font-size: 15px;
+  font-weight: 600;
+  color: #f0ebe0;
+  list-style: none;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  user-select: none;
+}
+
+.faqSummary::-webkit-details-marker {
+  display: none;
+}
+
+.faqSummary::after {
+  content: '+';
+  color: #e8b84b;
+  font-size: 20px;
+  font-weight: 300;
+  flex-shrink: 0;
+}
+
+.faqItem[open] .faqSummary::after {
+  content: '−';
+}
+
+.faqAnswer {
+  font-size: 14px;
+  color: #888;
+  line-height: 1.75;
+  padding-bottom: 20px;
+  margin: 0;
+}
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+
+.footerInner {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: wrap;
+  gap: 40px;
+}
+
+/* ── Responsive ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 960px) {
+  .fourGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 768px) {
+  .nav {
+    padding: 16px 20px;
+  }
+
+  .navLinks {
+    display: none;
+  }
+
+  .threeGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .pricingGrid {
+    grid-template-columns: 1fr;
+    max-width: 420px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  .heroVisual {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .heroArrow {
+    justify-content: center;
+    transform: rotate(90deg);
+  }
+
+  .heroButtons {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .footerInner {
+    flex-direction: column;
+    gap: 32px;
+  }
+}
+
+@media (max-width: 560px) {
+  .fourGrid {
+    grid-template-columns: 1fr;
+  }
+}
