@@ -104,7 +104,7 @@ function HeroImage({ src, alt, accent = false }) {
         src={src}
         alt={alt}
         fill
-        style={{ objectFit: 'cover' }}
+        style={{ objectFit: 'contain' }}
         sizes="(max-width: 768px) 100vw, 45vw"
         priority
       />
@@ -375,12 +375,13 @@ function Examples() {
               position: 'relative',
               aspectRatio: '4/5',
               borderBottom: `1px solid ${C.border}`,
+              background: '#111111',
             }}>
               <Image
                 src={e.src}
                 alt={`${e.title}: ${e.measurements}`}
                 fill
-                style={{ objectFit: 'cover' }}
+                style={{ objectFit: 'contain' }}
                 sizes="(max-width: 768px) 100vw, 33vw"
               />
             </div>
