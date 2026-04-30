@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import styles from './landing.module.css'
 
 const C = {
@@ -89,31 +90,24 @@ function Nav() {
 
 // ── HERO ──────────────────────────────────────────────────────────────────────
 
-function HeroPlaceholder({ label, sub, accent = false }) {
+function HeroImage({ src, alt, accent = false }) {
   return (
     <div style={{
       flex: 1,
-      minHeight: 260,
-      background: accent ? 'rgba(232,184,75,0.05)' : C.surface,
-      border: `1px solid ${accent ? 'rgba(232,184,75,0.28)' : C.border}`,
+      position: 'relative',
+      minHeight: 320,
       borderRadius: 14,
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 10,
-      padding: 24,
+      overflow: 'hidden',
+      border: `1px solid ${accent ? 'rgba(232,184,75,0.28)' : C.border}`,
     }}>
-      {/* TODO: Replace this placeholder with a real screenshot.
-          Use Next.js Image component:
-          import Image from 'next/image'
-          <Image src="/before.jpg" alt="Before: basic garment photo"
-                 fill style={{ objectFit: 'cover', borderRadius: 14 }} />
-          Then remove this inner content and set position:'relative' on the outer div.
-      */}
-      <div style={{ fontSize: 44, opacity: 0.12 }}>📷</div>
-      <div style={{ fontSize: 13, fontWeight: 700, color: accent ? C.gold : C.muted }}>{label}</div>
-      <div style={{ fontSize: 12, color: C.dim, textAlign: 'center' }}>{sub}</div>
+      <Image
+        src={src}
+        alt={alt}
+        fill
+        style={{ objectFit: 'cover' }}
+        sizes="(max-width: 768px) 100vw, 45vw"
+        priority
+      />
     </div>
   )
 }
@@ -154,9 +148,9 @@ function Hero() {
         </div>
 
         <div className={styles.heroVisual}>
-          <HeroPlaceholder label="Before" sub="Basic garment photo" />
+          <HeroImage src="/before.jpg" alt="Before: basic garment photo" />
           <div className={styles.heroArrow} aria-hidden="true">→</div>
-          <HeroPlaceholder label="After" sub="Listing-ready image with measurements" accent />
+          <HeroImage src="/after.png" alt="After: listing-ready image with measurements" accent />
         </div>
       </div>
     </section>
@@ -270,6 +264,30 @@ function HowItWorks() {
           </div>
         ))}
       </div>
+
+      <div style={{
+        position: 'relative',
+        maxWidth: 800,
+        margin: '56px auto 0',
+        borderRadius: 12,
+        overflow: 'hidden',
+        aspectRatio: '16/9',
+      }}>
+        <iframe
+          src="https://www.youtube.com/embed/MNDVm67l7Uo"
+          title="MEASURE — How It Works"
+          allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+          allowFullScreen
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            border: 'none',
+          }}
+        />
+      </div>
     </Section>
   )
 }
@@ -336,9 +354,9 @@ function Features() {
 
 function Examples() {
   const examples = [
-    { title: 'Pants', measurements: 'Waist · Rise · Inseam · Hip' },
-    { title: 'Shirt', measurements: 'Chest · Shoulder · Sleeve · Length' },
-    { title: 'Jacket', measurements: 'Chest · Shoulder · Sleeve · Length' },
+    { src: '/examples/pants.png', title: 'Pants', measurements: 'Waist · Rise · Inseam · Hip' },
+    { src: '/examples/shirt.png', title: 'Top', measurements: 'Shoulder · Chest · Sleeve · Length' },
+    { src: '/examples/jacket.png', title: 'Jacket', measurements: 'Shoulder · Chest · Length · Sleeve' },
   ]
 
   return (
@@ -353,26 +371,18 @@ function Examples() {
             borderRadius: 12,
             overflow: 'hidden',
           }}>
-            {/* TODO: Replace this placeholder with a real example image.
-                Remove the div below and use:
-                import Image from 'next/image'
-                <Image src={`/examples/${e.title.toLowerCase()}.jpg`}
-                       alt={`${e.title} with measurements: ${e.measurements}`}
-                       width={400} height={500}
-                       style={{ width: '100%', height: 'auto', display: 'block' }} />
-            */}
             <div style={{
+              position: 'relative',
               aspectRatio: '4/5',
-              background: C.surface,
               borderBottom: `1px solid ${C.border}`,
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: 8,
             }}>
-              <div style={{ fontSize: 44, opacity: 0.10 }}>👗</div>
-              <div style={{ fontSize: 11, color: C.dim }}>Example image</div>
+              <Image
+                src={e.src}
+                alt={`${e.title}: ${e.measurements}`}
+                fill
+                style={{ objectFit: 'cover' }}
+                sizes="(max-width: 768px) 100vw, 33vw"
+              />
             </div>
             <div style={{ padding: 20 }}>
               <div style={{ fontWeight: 700, color: C.text, marginBottom: 6 }}>{e.title}</div>

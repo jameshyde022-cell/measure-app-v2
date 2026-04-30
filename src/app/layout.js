@@ -1,13 +1,24 @@
 import './globals.css'
 import { Analytics } from '@vercel/analytics/next'
 export const metadata = {
-  title: 'MEASURE — Garment Annotation Tool',
-  description: 'Professional garment measurement annotation for clothing resellers. Click two points, enter your value, export a spec sheet.',
-  keywords: 'garment measurements, clothing reseller, measurement sheet, eBay seller tool, vintage clothing',
+  metadataBase: new URL(
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+  ),
+  title: 'MEASURE — Listing image tool for clothing resellers',
+  description: 'Turn basic garment photos into polished listing images with ghost mannequin styling, model images, and measurement annotations.',
+  keywords: 'garment measurements, clothing reseller, measurement sheet, eBay seller tool, vintage clothing, ghost mannequin, listing images',
   openGraph: {
-    title: 'MEASURE — Garment Annotation Tool',
-    description: 'Professional garment measurement annotation for clothing resellers.',
+    title: 'MEASURE — Listing image tool for clothing resellers',
+    description: 'Turn basic garment photos into polished listing images with ghost mannequin styling, model images, and measurement annotations.',
     type: 'website',
+    images: [{ url: '/og', width: 1200, height: 630, alt: 'MEASURE — Listing image tool for clothing resellers' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'MEASURE — Listing image tool for clothing resellers',
+    description: 'Turn basic garment photos into polished listing images with ghost mannequin styling, model images, and measurement annotations.',
+    images: ['/og'],
   },
 }
 export default function RootLayout({ children }) {
