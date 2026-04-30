@@ -497,7 +497,7 @@ export default function MeasureTool() {
   };
 
   const S={
-    lbl:{fontFamily:'monospace',fontSize:9,letterSpacing:'0.18em',textTransform:'uppercase',color:'#555',marginBottom:5,display:'block'},
+    lbl:{fontFamily:'monospace',fontSize:11,letterSpacing:'0.18em',textTransform:'uppercase',color:'#999',marginBottom:5,display:'block'},
     inp:{fontFamily:'monospace',fontSize:12,padding:'7px 10px',border:'1px solid #2a2a2a',borderRadius:2,background:'#080808',color:'#f0ebe0',width:'100%'},
     ghost:{padding:'6px 10px',background:'transparent',border:'1px solid #2a2a2a',fontFamily:'monospace',fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase',color:'#aaaaaa',cursor:'pointer',borderRadius:2},
   };
@@ -517,7 +517,7 @@ export default function MeasureTool() {
     if(ix.mode==='placing_p1') return '#e8b84b';
     if(ix.mode==='placing_p2') return '#81C784';
     if(ix.mode==='adjusting')  return '#4FC3F7';
-    return '#555';
+    return '#999';
   };
 
   const exportsLeft = FREE_MAX_EXPORTS_PER_DAY - exportCount;
@@ -542,7 +542,7 @@ export default function MeasureTool() {
               ))}
             </div>
           </div>
-          <div style={{fontFamily:'monospace',fontSize:9,color:'#444',letterSpacing:'0.1em'}}>Powered by Gemini - This may take 20-30 seconds</div>
+          <div style={{fontFamily:'monospace',fontSize:11,color:'#999',letterSpacing:'0.1em'}}>Powered by Gemini - This may take 20-30 seconds</div>
         </div>
       )}
 
@@ -552,14 +552,14 @@ export default function MeasureTool() {
           MEAS<span style={{color:'#e8b84b'}}>UR</span>E
         </div>
         <div style={{width:1,height:14,background:'#2a2a2a'}}/>
-        <div style={{fontSize:9,color:'#444',letterSpacing:'0.18em',textTransform:'uppercase'}}>Garment Annotation Tool</div>
+        <div style={{fontSize:11,color:'#999',letterSpacing:'0.18em',textTransform:'uppercase'}}>Garment Annotation Tool</div>
         <div style={{marginLeft:'auto',display:'flex',gap:6,alignItems:'center'}}>
           {/* Tier badge */}
           <div style={{padding:'3px 8px',borderRadius:2,background:pro?'#e8b84b22':'#1a1a1a',border:`1px solid ${pro?'#e8b84b44':'#2a2a2a'}`,fontSize:10,color:pro?'#e8b84b':'#aaaaaa',letterSpacing:'0.15em',textTransform:'uppercase'}}>
             {pro?'PRO':`FREE ${exportsLeft > 0 ? `(${exportsLeft} exports left)` : '(0 left)'}`}
           </div>
           {!pro&&(
-            <button onClick={()=>window.location.href='/pricing'} style={{padding:'4px 10px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:8,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>
+            <button onClick={()=>window.location.href='/pricing'} style={{padding:'4px 10px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>
               Upgrade
             </button>
           )}
@@ -577,17 +577,17 @@ export default function MeasureTool() {
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:30,fontWeight:700,lineHeight:1.2,marginBottom:10}}>
                 Your measurements.<br/><span style={{color:'#e8b84b'}}>Beautifully annotated.</span>
               </div>
-              <p style={{fontSize:11,color:'#555',lineHeight:1.8}}>
+              <p style={{fontSize:11,color:'#999',lineHeight:1.8}}>
                 Upload a garment photo. Place measurement lines. Generate a professional spec sheet.
               </p>
             </div>
             {/* Gender toggle */}
             <div style={{display:'flex',gap:8,marginBottom:4}}>
               <div onClick={()=>setGender('female')} style={{flex:1,padding:'8px',border:`1px solid ${gender==='female'?'#e8b84b':'#2a2a2a'}`,borderRadius:2,cursor:'pointer',background:gender==='female'?'#e8b84b11':'#080808',textAlign:'center',transition:'all 0.15s'}}>
-                <div style={{fontSize:11,color:gender==='female'?'#e8b84b':'#555',fontFamily:'monospace',letterSpacing:'0.1em'}}>♀ Women's</div>
+                <div style={{fontSize:11,color:gender==='female'?'#e8b84b':'#999',fontFamily:'monospace',letterSpacing:'0.1em'}}>♀ Women's</div>
               </div>
               <div onClick={()=>setGender('male')} style={{flex:1,padding:'8px',border:`1px solid ${gender==='male'?'#4FC3F7':'#2a2a2a'}`,borderRadius:2,cursor:'pointer',background:gender==='male'?'#4FC3F711':'#080808',textAlign:'center',transition:'all 0.15s'}}>
-                <div style={{fontSize:11,color:gender==='male'?'#4FC3F7':'#555',fontFamily:'monospace',letterSpacing:'0.1em'}}>♂ Men's</div>
+                <div style={{fontSize:11,color:gender==='male'?'#4FC3F7':'#999',fontFamily:'monospace',letterSpacing:'0.1em'}}>♂ Men's</div>
               </div>
             </div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
@@ -600,8 +600,8 @@ export default function MeasureTool() {
               >
                 <div style={{fontSize:30}}>🧹</div>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:'#f0ebe0'}}>Clean Flat-Lay</div>
-                <div style={{fontSize:9,color:'#555',letterSpacing:'0.12em',lineHeight:1.7,textTransform:'uppercase'}}>Already removed<br/>background</div>
-                <div style={{marginTop:4,padding:'4px 12px',background:'#1a1a1a',border:'1px solid #2a2a2a',borderRadius:2,fontSize:9,color:'#888',fontFamily:'monospace',letterSpacing:'0.1em'}}>Skip BG Removal</div>
+                <div style={{fontSize:11,color:'#999',letterSpacing:'0.12em',lineHeight:1.7,textTransform:'uppercase'}}>Already removed<br/>background</div>
+                <div style={{marginTop:4,padding:'4px 12px',background:'#1a1a1a',border:'1px solid #2a2a2a',borderRadius:2,fontSize:11,color:'#999',fontFamily:'monospace',letterSpacing:'0.1em'}}>Skip BG Removal</div>
               </div>
               <div
                 onClick={()=>fileRef.current.click()}
@@ -612,18 +612,18 @@ export default function MeasureTool() {
               >
                 <div style={{fontSize:30}}>📷</div>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:'#f0ebe0'}}>Raw Photo</div>
-                <div style={{fontSize:9,color:'#555',letterSpacing:'0.12em',lineHeight:1.7,textTransform:'uppercase'}}>Auto background<br/>removal via Gemini</div>
-                <div style={{marginTop:4,padding:'4px 12px',background:'#e8b84b22',border:'1px solid #e8b84b44',borderRadius:2,fontSize:9,color:'#e8b84b',fontFamily:'monospace',letterSpacing:'0.1em'}}>Auto Clean - Measure</div>
+                <div style={{fontSize:11,color:'#999',letterSpacing:'0.12em',lineHeight:1.7,textTransform:'uppercase'}}>Auto background<br/>removal via Gemini</div>
+                <div style={{marginTop:4,padding:'4px 12px',background:'#e8b84b22',border:'1px solid #e8b84b44',borderRadius:2,fontSize:11,color:'#e8b84b',fontFamily:'monospace',letterSpacing:'0.1em'}}>Auto Clean - Measure</div>
               </div>
             </div>
-            <div style={{fontSize:9,color:'#333',letterSpacing:'0.12em',textAlign:'center',textTransform:'uppercase'}}>
+            <div style={{fontSize:11,color:'#999',letterSpacing:'0.12em',textAlign:'center',textTransform:'uppercase'}}>
               JPG - PNG - WEBP - Drop anywhere above
             </div>
 
             {/* Rear View Generator */}
             <div style={{borderTop:'1px solid #1a1a1a',paddingTop:20,display:'flex',flexDirection:'column',gap:12}}>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:'#f0ebe0'}}>Rear View Ghost Mannequin</div>
-              <div style={{fontSize:9,color:'#555',letterSpacing:'0.12em',lineHeight:1.8,textTransform:'uppercase'}}>Upload the back-side product photo to generate a rear-facing ghost mannequin image.</div>
+              <div style={{fontSize:11,color:'#999',letterSpacing:'0.12em',lineHeight:1.8,textTransform:'uppercase'}}>Upload the back-side product photo to generate a rear-facing ghost mannequin image.</div>
               <div
                 onClick={()=>rearFileRef.current.click()}
                 onDragOver={e=>{e.preventDefault();}}
@@ -632,27 +632,27 @@ export default function MeasureTool() {
               >
                 <div style={{fontSize:30}}>🔄</div>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,color:'#f0ebe0'}}>Upload Back Photo</div>
-                <div style={{fontSize:9,color:'#555',letterSpacing:'0.12em',textTransform:'uppercase'}}>Generates rear-facing ghost mannequin</div>
+                <div style={{fontSize:11,color:'#999',letterSpacing:'0.12em',textTransform:'uppercase'}}>Generates rear-facing ghost mannequin</div>
               </div>
               {rearGenerating&&(
                 <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px',background:'#080808',border:'1px solid #1e1e1e',borderRadius:2}}>
                   <div style={{width:18,height:18,borderRadius:'50%',border:'2px solid transparent',borderTopColor:'#e8b84b',animation:'spin 0.9s linear infinite',flexShrink:0}}/>
-                  <span style={{fontFamily:'monospace',fontSize:10,color:'#e8b84b',letterSpacing:'0.1em'}}>Generating rear view — this may take 20–30 seconds...</span>
+                  <span style={{fontFamily:'monospace',fontSize:11,color:'#e8b84b',letterSpacing:'0.1em'}}>Generating rear view — this may take 20–30 seconds...</span>
                 </div>
               )}
               {rearError&&(
                 <div style={{background:'#1a0a0a',border:'1px solid #c8401a',borderRadius:2,padding:'10px 12px'}}>
-                  <span style={{fontFamily:'monospace',fontSize:9,color:'#EF9A9A'}}>{rearError}</span>
+                  <span style={{fontFamily:'monospace',fontSize:11,color:'#EF9A9A'}}>{rearError}</span>
                 </div>
               )}
               {rearResult&&(
                 <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:12,padding:'16px',background:'#080808',border:'1px solid #2a2a2a',borderRadius:2}}>
                   <img src={rearResult} alt="Rear view" style={{maxWidth:'100%',borderRadius:2,boxShadow:'0 4px 24px rgba(0,0,0,0.6)'}}/>
                   <div style={{display:'flex',gap:8}}>
-                    <button onClick={handleRearDownload} style={{padding:'10px 20px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:10,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d',fontWeight:'bold'}}>
+                    <button onClick={handleRearDownload} style={{padding:'10px 20px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d',fontWeight:'bold'}}>
                       Download Rear View
                     </button>
-                    <button onClick={()=>{setRearResult(null);setRearError(null);}} style={{padding:'10px 14px',background:'transparent',border:'1px solid #1e1e1e',fontFamily:'monospace',fontSize:9,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#555'}}>
+                    <button onClick={()=>{setRearResult(null);setRearError(null);}} style={{padding:'10px 14px',background:'transparent',border:'1px solid #2a2a2a',fontFamily:'monospace',fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#999'}}>
                       Clear
                     </button>
                   </div>
@@ -665,7 +665,7 @@ export default function MeasureTool() {
               <div style={{display:'flex',alignItems:'center',gap:8}}>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:'#f0ebe0'}}>Model Dress-Up</div>
               </div>
-              <div style={{fontSize:9,color:'#555',letterSpacing:'0.12em',lineHeight:1.8,textTransform:'uppercase'}}>Upload a garment photo to generate a professional model photo styled for ecommerce.</div>
+              <div style={{fontSize:11,color:'#999',letterSpacing:'0.12em',lineHeight:1.8,textTransform:'uppercase'}}>Upload a garment photo to generate a professional model photo styled for ecommerce.</div>
               <div
                 onClick={()=>modelFileRef.current.click()}
                 onDragOver={e=>{e.preventDefault();}}
@@ -674,27 +674,27 @@ export default function MeasureTool() {
               >
                 <div style={{fontSize:30}}>👗</div>
                 <div style={{fontFamily:"'Playfair Display',serif",fontSize:13,color:'#f0ebe0'}}>Upload Garment Photo</div>
-                <div style={{fontSize:9,color:'#555',letterSpacing:'0.12em',textTransform:'uppercase'}}>Generates professional model ecommerce photo</div>
+                <div style={{fontSize:11,color:'#999',letterSpacing:'0.12em',textTransform:'uppercase'}}>Generates professional model ecommerce photo</div>
               </div>
               {modelGenerating&&(
                 <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px',background:'#080808',border:'1px solid #1e1e1e',borderRadius:2}}>
                   <div style={{width:18,height:18,borderRadius:'50%',border:'2px solid transparent',borderTopColor:'#e8b84b',animation:'spin 0.9s linear infinite',flexShrink:0}}/>
-                  <span style={{fontFamily:'monospace',fontSize:10,color:'#e8b84b',letterSpacing:'0.1em'}}>Generating model photo — this may take 20–30 seconds...</span>
+                  <span style={{fontFamily:'monospace',fontSize:11,color:'#e8b84b',letterSpacing:'0.1em'}}>Generating model photo — this may take 20–30 seconds...</span>
                 </div>
               )}
               {modelError&&(
                 <div style={{background:'#1a0a0a',border:'1px solid #c8401a',borderRadius:2,padding:'10px 12px'}}>
-                  <span style={{fontFamily:'monospace',fontSize:9,color:'#EF9A9A'}}>{modelError}</span>
+                  <span style={{fontFamily:'monospace',fontSize:11,color:'#EF9A9A'}}>{modelError}</span>
                 </div>
               )}
               {modelResult&&(
                 <div style={{display:'flex',flexDirection:'column',alignItems:'center',gap:12,padding:'16px',background:'#080808',border:'1px solid #2a2a2a',borderRadius:2}}>
                   <img src={modelResult} alt="Model dress-up" style={{maxWidth:'100%',borderRadius:2,boxShadow:'0 4px 24px rgba(0,0,0,0.6)'}}/>
                   <div style={{display:'flex',gap:8}}>
-                    <button onClick={handleModelDownload} style={{padding:'10px 20px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:10,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d',fontWeight:'bold'}}>
+                    <button onClick={handleModelDownload} style={{padding:'10px 20px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d',fontWeight:'bold'}}>
                       Download
                     </button>
-                    <button onClick={()=>{setModelResult(null);setModelError(null);}} style={{padding:'10px 14px',background:'transparent',border:'1px solid #1e1e1e',fontFamily:'monospace',fontSize:9,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#555'}}>
+                    <button onClick={()=>{setModelResult(null);setModelError(null);}} style={{padding:'10px 14px',background:'transparent',border:'1px solid #2a2a2a',fontFamily:'monospace',fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#999'}}>
                       Clear
                     </button>
                   </div>
@@ -713,7 +713,7 @@ export default function MeasureTool() {
           <div style={{background:'#060606',display:'flex',alignItems:'center',justifyContent:'center',padding:8,position:'relative',flexShrink:0}}>
             {bgError&&(
               <div style={{position:'absolute',top:8,left:'50%',transform:'translateX(-50%)',background:'rgba(90,26,26,0.95)',border:'1px solid #c8401a',borderRadius:2,padding:'8px 16px',zIndex:10,whiteSpace:'nowrap'}}>
-                <span style={{fontFamily:'monospace',fontSize:9,color:'#EF9A9A'}}>{bgError}</span>
+                <span style={{fontFamily:'monospace',fontSize:11,color:'#EF9A9A'}}>{bgError}</span>
                 <button onClick={()=>setBgError(null)} style={{background:'transparent',border:'none',color:'#EF9A9A',cursor:'pointer',marginLeft:10,fontSize:12}}>x</button>
               </div>
             )}
@@ -734,8 +734,8 @@ export default function MeasureTool() {
             {/* Limit message */}
             {limitMsg&&(
               <div style={{background:'#1a0a0a',border:'1px solid #c8401a',borderRadius:2,padding:'10px 12px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
-                <span style={{fontSize:10,color:'#EF9A9A'}}>{limitMsg}</span>
-                <button onClick={()=>window.location.href='/pricing'} style={{padding:'4px 10px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:8,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d',whiteSpace:'nowrap'}}>
+                <span style={{fontSize:11,color:'#EF9A9A'}}>{limitMsg}</span>
+                <button onClick={()=>window.location.href='/pricing'} style={{padding:'4px 10px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d',whiteSpace:'nowrap'}}>
                   Upgrade
                 </button>
               </div>
@@ -743,7 +743,7 @@ export default function MeasureTool() {
 
             {/* Instruction bar */}
             <div style={{background:`${instrColor()}11`,border:`1px solid ${instrColor()}33`,borderRadius:2,padding:'10px 12px'}}>
-              <div style={{fontSize:10,color:instrColor(),fontWeight:'bold'}}>{instrText()}</div>
+              <div style={{fontSize:11,color:instrColor(),fontWeight:'bold'}}>{instrText()}</div>
             </div>
 
             {/* Action buttons */}
@@ -758,7 +758,7 @@ export default function MeasureTool() {
                   <button onClick={confirmLine} style={{flex:2,padding:'11px',background:'#81C784',border:'none',fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>
                     Confirm Line
                   </button>
-                  <button onClick={cancelLine} style={{flex:1,padding:'11px',background:'transparent',border:'1px solid #c8401a',fontFamily:'monospace',fontSize:9,letterSpacing:'0.1em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#EF9A9A'}}>
+                  <button onClick={cancelLine} style={{flex:1,padding:'11px',background:'transparent',border:'1px solid #c8401a',fontFamily:'monospace',fontSize:11,letterSpacing:'0.1em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#EF9A9A'}}>
                     Cancel
                   </button>
                 </>
@@ -803,15 +803,15 @@ export default function MeasureTool() {
                     <div key={i} onMouseEnter={()=>setHoverIdx(i)} onMouseLeave={()=>setHoverIdx(null)}
                       style={{background:hoverIdx===i?'#111':'#080808',border:`1px solid ${hoverIdx===i?line.color+'44':'#1a1a1a'}`,borderLeft:`3px solid ${line.color}`,borderRadius:2,padding:'7px 9px',transition:'all 0.1s'}}>
                       <div style={{display:'flex',gap:6,alignItems:'center',marginBottom:4}}>
-                        <div style={{width:16,height:16,borderRadius:'50%',background:'rgba(8,8,8,0.85)',border:`1.5px solid ${line.color}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
-                          <span style={{fontFamily:'monospace',fontSize:8,color:line.color,fontWeight:'bold'}}>{i+1}</span>
+                        <div style={{width:20,height:20,borderRadius:'50%',background:'rgba(8,8,8,0.85)',border:`1.5px solid ${line.color}`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}>
+                          <span style={{fontFamily:'monospace',fontSize:11,color:line.color,fontWeight:'bold'}}>{i+1}</span>
                         </div>
-                        <input type='text' value={line.name} onChange={e=>updLine(i,'name',e.target.value)} style={{...S.inp,flex:1,fontSize:10,padding:'2px 6px',color:line.color}}/>
-                        <button onClick={()=>delLine(i)} style={{background:'transparent',border:'none',color:'#333',cursor:'pointer',fontSize:13,padding:'0 2px',flexShrink:0}}>x</button>
+                        <input type='text' value={line.name} onChange={e=>updLine(i,'name',e.target.value)} style={{...S.inp,flex:1,fontSize:11,padding:'2px 6px',color:line.color}}/>
+                        <button onClick={()=>delLine(i)} style={{background:'transparent',border:'none',color:'#999',cursor:'pointer',fontSize:13,padding:'0 2px',flexShrink:0}}>x</button>
                       </div>
                       <div style={{display:'flex',gap:5,paddingLeft:22}}>
                         <input type='text' placeholder='value' value={line.value} onChange={e=>updLine(i,'value',e.target.value)} style={{...S.inp,flex:1,fontSize:11,padding:'2px 6px'}}/>
-                        <select value={line.unit} onChange={e=>updLine(i,'unit',e.target.value)} style={{...S.inp,width:50,fontSize:10,padding:'2px 4px'}}><option value='"'>in</option><option value='cm'>cm</option></select>
+                        <select value={line.unit} onChange={e=>updLine(i,'unit',e.target.value)} style={{...S.inp,width:50,fontSize:11,padding:'2px 4px'}}><option value='"'>in</option><option value='cm'>cm</option></select>
                       </div>
                     </div>
                   ))}
@@ -829,8 +829,8 @@ export default function MeasureTool() {
                     {ASPECT_RATIOS.map(ar=>(
                       <div key={ar.id} onClick={()=>setAspectRatio(ar.id)}
                         style={{padding:'7px 8px',border:`1px solid ${aspectRatio===ar.id?'#e8b84b':'#2a2a2a'}`,borderRadius:2,cursor:'pointer',background:aspectRatio===ar.id?'#e8b84b11':'#080808',transition:'all 0.15s'}}>
-                        <div style={{fontSize:10,color:aspectRatio===ar.id?'#e8b84b':'#888',fontWeight:'bold'}}>{ar.label}</div>
-                        <div style={{fontSize:8,color:'#444',marginTop:1}}>{ar.desc}</div>
+                        <div style={{fontSize:11,color:aspectRatio===ar.id?'#e8b84b':'#999',fontWeight:'bold'}}>{ar.label}</div>
+                        <div style={{fontSize:11,color:'#999',marginTop:1}}>{ar.desc}</div>
                       </div>
                     ))}
                   </div>
@@ -846,12 +846,12 @@ export default function MeasureTool() {
                 )}
                 {!pro&&(
                   <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'7px 10px',background:exportsLeft===0?'#1a0808':'#080808',border:`1px solid ${exportsLeft===0?'#c8401a44':exportsLeft===1?'#e8b84b33':'#1e1e1e'}`,borderRadius:2}}>
-                    <span style={{fontFamily:'monospace',fontSize:10,color:exportsLeft===0?'#EF9A9A':exportsLeft===1?'#e8b84b':'#555',letterSpacing:'0.04em'}}>
+                    <span style={{fontFamily:'monospace',fontSize:11,color:exportsLeft===0?'#EF9A9A':exportsLeft===1?'#e8b84b':'#999',letterSpacing:'0.04em'}}>
                       {exportsLeft>0
                         ?`${exportsLeft} export${exportsLeft===1?'':'s'} remaining today`
                         :'No exports remaining today'}
                     </span>
-                    <span style={{fontFamily:'monospace',fontSize:9,color:exportsLeft===0?'#c8401a':'#333',letterSpacing:'0.08em'}}>
+                    <span style={{fontFamily:'monospace',fontSize:11,color:exportsLeft===0?'#c8401a':'#999',letterSpacing:'0.08em'}}>
                       {exportCount}/{FREE_MAX_EXPORTS_PER_DAY}
                     </span>
                   </div>
@@ -866,12 +866,12 @@ export default function MeasureTool() {
             <div ref={exportSectionRef} style={{display:showExport?'flex':'none',borderTop:'2px solid #e8b84b44',padding:'24px 0',flexDirection:'column',alignItems:'center',gap:16}}>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:18,color:'#e8b84b'}}>Measurement Sheet</div>
               <div style={{display:'flex',gap:8,alignItems:'center'}}>
-                <span style={{fontFamily:'monospace',fontSize:9,color:'#444',letterSpacing:'0.12em',textTransform:'uppercase'}}>Format:</span>
-                <span style={{fontFamily:'monospace',fontSize:9,color:'#e8b84b',letterSpacing:'0.12em'}}>{ASPECT_RATIOS.find(a=>a.id===aspectRatio)?.label}</span>
+                <span style={{fontFamily:'monospace',fontSize:11,color:'#999',letterSpacing:'0.12em',textTransform:'uppercase'}}>Format:</span>
+                <span style={{fontFamily:'monospace',fontSize:11,color:'#e8b84b',letterSpacing:'0.12em'}}>{ASPECT_RATIOS.find(a=>a.id===aspectRatio)?.label}</span>
               </div>
               <canvas ref={exportRef} style={{maxWidth:'100%',borderRadius:2,boxShadow:'0 8px 48px rgba(0,0,0,0.8)',border:'1px solid #2a2a2a'}}/>
               <div style={{display:'flex',gap:8,marginTop:4,flexWrap:'wrap',justifyContent:'center'}}>
-                <button onClick={handleDownload} style={{padding:'10px 20px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:10,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d',fontWeight:'bold'}}>
+                <button onClick={handleDownload} style={{padding:'10px 20px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d',fontWeight:'bold'}}>
                   Download Image
                 </button>
                 <button onClick={handleExport} style={{...S.ghost,color:'#e8b84b',borderColor:'#e8b84b44'}}>Regenerate</button>
@@ -889,8 +889,8 @@ export default function MeasureTool() {
       <input ref={modelFileRef} type='file' accept='image/*' style={{display:'none'}} onChange={e=>handleModelDressUp(e.target.files[0])}/>
 
       <div style={{borderTop:'1px solid #111',padding:'7px 24px',display:'flex',justifyContent:'space-between',flexShrink:0}}>
-        <span style={{fontSize:8,color:'#1e1e1e'}}>MEASURE - Garment Annotation Tool</span>
-        <span style={{fontSize:8,color:'#1e1e1e'}}>Place - Adjust - Confirm</span>
+        <span style={{fontSize:11,color:'#444'}}>MEASURE - Garment Annotation Tool</span>
+        <span style={{fontSize:11,color:'#444'}}>Place - Adjust - Confirm</span>
       </div>
     </div>
   );
