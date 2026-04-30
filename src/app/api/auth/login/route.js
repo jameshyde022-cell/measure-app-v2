@@ -7,7 +7,8 @@ export async function POST(request) {
   try {
     const body = await request.json()
     email = body.email?.toLowerCase().trim()
-  } catch {
+  } catch (err) {
+    console.error('[auth/login] Failed to parse request body:', err)
     return Response.json({ error: 'Invalid request.' }, { status: 400 })
   }
 
@@ -15,15 +16,23 @@ export async function POST(request) {
     return Response.json({ error: 'A valid email address is required.' }, { status: 400 })
   }
 
-  const payload = JSON.stringify({ email, iat: Date.now() })
-  const encoder = new TextEncoder()
+  let token
+  try {
+    const payload = JSON.stringify({ email, iat: Date.now() })
+    const encoder = new TextEncoder()
 
-  const key = await crypto.subtle.importKey(
-    'raw', encoder.encode(SECRET),
-    { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-  )
-  const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(payload))
-  const token = btoa(payload) + '.' + btoa(String.fromCharCode(...new Uint8Array(sig)))
+    const key = await crypto.subtle.importKey(
+      'raw', encoder.encode(SECRET),
+      { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    )
+    const sig = await crypto.subtle.sign('HMAC', key, encoder.encode(payload))
+    token = btoa(payload) + '.' + btoa(String.fromCharCode(...new Uint8Array(sig)))
+
+    console.log('[auth/login] Session token created for:', email)
+  } catch (err) {
+    console.error('[auth/login] Failed to sign session token:', err)
+    return Response.json({ error: 'Failed to create session. Please try again.' }, { status: 500 })
+  }
 
   const isProd = process.env.NODE_ENV === 'production'
   const cookie = [
@@ -35,7 +44,14 @@ export async function POST(request) {
     isProd ? 'Secure' : '',
   ].filter(Boolean).join('; ')
 
-  const res = Response.json({ ok: true })
-  res.headers.set('Set-Cookie', cookie)
-  return res
+  // Pass Set-Cookie in the Response constructor — Response.json() headers are
+  // immutable in the Edge runtime so calling headers.set() after the fact silently
+  // fails and the cookie is never sent.
+  return new Response(JSON.stringify({ ok: true }), {
+    status: 200,
+    headers: {
+      'Content-Type': 'application/json',
+      'Set-Cookie': cookie,
+    },
+  })
 }

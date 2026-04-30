@@ -32,8 +32,11 @@ function LoginForm() {
         return
       }
 
-      router.push(next)
-    } catch {
+      // Full navigation instead of router.push so that if middleware redirects
+      // back to /login the page reloads fresh and loading never stays stuck.
+      window.location.href = next
+    } catch (err) {
+      console.error('[login] Fetch error:', err)
       setError('Something went wrong. Please try again.')
       setLoading(false)
     }
