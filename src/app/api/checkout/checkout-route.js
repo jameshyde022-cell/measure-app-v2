@@ -9,16 +9,29 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
 );
 
-const PRICE_ID = process.env.STRIPE_PRICE_ID;
+const PRICE_ID_MONTHLY = process.env.STRIPE_PRICE_ID;
+// TODO: Create a yearly price in your Stripe dashboard (Products → your product → Add price →
+// Recurring, every year, $29.99) then add STRIPE_PRICE_ID_YEARLY=price_xxxx to your env vars.
+const PRICE_ID_YEARLY = process.env.STRIPE_PRICE_ID_YEARLY;
+
 const AFFILIATE_COUPON_ID = 'Ag7Ld0Fp'; // 1 month free (100% off once)
 
 export async function POST(req) {
   try {
-    const { email, referralCode } = await req.json();
+    const { email, referralCode, plan } = await req.json();
+
+    const isYearly = plan === 'yearly';
+    const priceId = isYearly ? PRICE_ID_YEARLY : PRICE_ID_MONTHLY;
+
+    if (!priceId) {
+      const msg = isYearly
+        ? 'Yearly plan is not yet configured. Please contact support or choose the monthly plan.'
+        : 'Monthly plan price is not configured.';
+      return NextResponse.json({ error: msg }, { status: 500 });
+    }
 
     let influencer = null;
 
-    // If a referral code was provided, look it up
     if (referralCode) {
       const normalized = referralCode.toUpperCase().replace(/\s+/g, '');
       const { data } = await supabase
@@ -30,14 +43,14 @@ export async function POST(req) {
       if (data) influencer = data;
     }
 
-    // Build Stripe checkout session
     const sessionParams = {
       payment_method_types: ['card'],
       mode: 'subscription',
-      line_items: [{ price: PRICE_ID, quantity: 1 }],
+      line_items: [{ price: priceId, quantity: 1 }],
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/pricing`,
       metadata: {
+        plan: isYearly ? 'yearly' : 'monthly',
         referral_code: influencer?.code || '',
         influencer_id: influencer?.id || '',
       },
@@ -45,9 +58,16 @@ export async function POST(req) {
 
     if (email) sessionParams.customer_email = email;
 
-    // Apply 1 month free coupon + track referral if valid influencer code
-    if (influencer) {
+    // Apply referral coupon — only on monthly; yearly already carries a large discount
+    if (influencer && !isYearly) {
       sessionParams.discounts = [{ coupon: AFFILIATE_COUPON_ID }];
+      sessionParams.subscription_data = {
+        metadata: {
+          referral_code: influencer.code,
+          influencer_id: influencer.id,
+        },
+      };
+    } else if (influencer && isYearly) {
       sessionParams.subscription_data = {
         metadata: {
           referral_code: influencer.code,
@@ -58,7 +78,6 @@ export async function POST(req) {
 
     const session = await stripe.checkout.sessions.create(sessionParams);
 
-    // Log the referral in Supabase (pending until payment confirmed)
     if (influencer) {
       await supabase.from('referrals').insert({
         influencer_id: influencer.id,
