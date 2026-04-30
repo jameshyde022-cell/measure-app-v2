@@ -566,6 +566,12 @@ export default function MeasureTool() {
           {phase==='annotate'&&(
             <button onClick={()=>fileRef.current.click()} style={S.ghost}>New Photo</button>
           )}
+          <button
+            onClick={async()=>{await fetch('/api/auth/logout',{method:'POST'});window.location.href='/login';}}
+            style={{background:'none',border:'none',fontFamily:'monospace',fontSize:10,color:'#555',cursor:'pointer',letterSpacing:'0.08em',padding:'2px 4px'}}
+          >
+            Sign out
+          </button>
         </div>
       </div>
 
