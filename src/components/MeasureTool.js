@@ -149,6 +149,14 @@ export default function MeasureTool() {
   const [modelGenerating,setModelGenerating] = useState(false);
   const [modelResult,setModelResult] = useState(null);
   const [modelError,setModelError]   = useState(null);
+  const [clothingType,setClothingType] = useState('');
+  const [condition,setCondition]       = useState('');
+  const [taggedSize,setTaggedSize]     = useState('');
+  const [flaws,setFlaws]               = useState('');
+  const [saving,setSaving]             = useState(false);
+  const [saveError,setSaveError]       = useState(null);
+  const [suggestedPrice,setSuggestedPrice] = useState(null);
+  const [savedRecordId,setSavedRecordId]   = useState(null);
 
   const ASPECT_RATIOS = [
     {id:'original', label:'Original',     desc:'As-is'},
@@ -417,7 +425,25 @@ export default function MeasureTool() {
       setExportCount(newCount);
     }
     setShowExport(true);
+    setSaving(true); setSuggestedPrice(null); setSavedRecordId(null); setSaveError(null);
     setTimeout(()=>exportSectionRef.current?.scrollIntoView({behavior:'smooth',block:'start'}),150);
+    ec.toBlob(async(blob)=>{
+      if(!blob){setSaving(false);return;}
+      try{
+        const fd=new FormData();
+        fd.append('image',blob,'export.png');
+        fd.append('brand',brand);
+        fd.append('clothingType',clothingType);
+        fd.append('condition',condition);
+        fd.append('taggedSize',taggedSize);
+        fd.append('flaws',flaws);
+        fd.append('measurements',JSON.stringify(lines));
+        const res=await fetch('/api/inventory/save-export',{method:'POST',body:fd});
+        if(res.ok){const d=await res.json();setSuggestedPrice(d.suggestedPrice);setSavedRecordId(d.recordId);}
+        else setSaveError('Saved locally — inventory save failed.');
+      }catch{setSaveError('Saved locally — inventory save failed.');}
+      setSaving(false);
+    },'image/png');
   };
 
   const handleDownload=()=>{
@@ -573,6 +599,12 @@ export default function MeasureTool() {
           {phase==='annotate'&&(
             <button onClick={()=>fileRef.current.click()} style={S.ghost}>New Photo</button>
           )}
+          <button
+            onClick={()=>window.location.href='/inventory'}
+            style={{background:'none',border:'none',fontFamily:'monospace',fontSize:11,color:'#f0ebe0',cursor:'pointer',letterSpacing:'0.08em',padding:'2px 4px',textDecoration:'underline'}}
+          >
+            Inventory
+          </button>
           <button
             onClick={async()=>{await fetch('/api/auth/logout',{method:'POST'});window.location.href='/login';}}
             style={{background:'none',border:'none',fontFamily:'monospace',fontSize:11,color:'#f0ebe0',cursor:'pointer',letterSpacing:'0.08em',padding:'2px 4px',textDecoration:'underline'}}
@@ -851,6 +883,28 @@ export default function MeasureTool() {
                 <div><label style={S.lbl}>Brand</label><input type='text' placeholder='e.g. Moschino Jeans' value={brand} onChange={e=>setBrand(e.target.value)} style={S.inp}/></div>
                 <div><label style={S.lbl}>Item</label><input type='text' placeholder='e.g. Love All Over' value={itemName} onChange={e=>setItemName(e.target.value)} style={S.inp}/></div>
                 <div><label style={S.lbl}>Notes</label><input type='text' placeholder='e.g. Condition, colour' value={notes} onChange={e=>setNotes(e.target.value)} style={S.inp}/></div>
+
+                {/* Item Details — saved to inventory, not printed on image */}
+                <div style={{borderTop:'1px solid #1e1e1e',paddingTop:12,marginTop:4,display:'flex',flexDirection:'column',gap:8}}>
+                  <span style={{...S.lbl,color:'#4FC3F7'}}>Item Details</span>
+                  <div><label style={S.lbl}>Clothing Type</label><input type='text' placeholder='e.g. Jeans, Blazer, T-shirt' value={clothingType} onChange={e=>setClothingType(e.target.value)} style={S.inp}/></div>
+                  <div>
+                    <label style={S.lbl}>Condition</label>
+                    <select value={condition} onChange={e=>setCondition(e.target.value)} style={S.inp}>
+                      <option value=''>Select condition...</option>
+                      <option value='Excellent / Like new'>Excellent / Like new</option>
+                      <option value='Very good'>Very good</option>
+                      <option value='Good'>Good</option>
+                      <option value='Fair / Worn'>Fair / Worn</option>
+                    </select>
+                  </div>
+                  <div><label style={S.lbl}>Tagged Size</label><input type='text' placeholder='e.g. M, 32, 10' value={taggedSize} onChange={e=>setTaggedSize(e.target.value)} style={S.inp}/></div>
+                  <div>
+                    <label style={S.lbl}>Flaws / Damage</label>
+                    <textarea placeholder='Describe any flaws or damage...' value={flaws} onChange={e=>setFlaws(e.target.value)} style={{...S.inp,minHeight:56,resize:'vertical'}}/>
+                  </div>
+                </div>
+
                 {pro&&(
                   <div>
                     <label style={S.lbl}>Custom Watermark (Pro)</label>
@@ -890,6 +944,26 @@ export default function MeasureTool() {
                 <button onClick={handleExport} style={{...S.ghost,color:'#e8b84b',borderColor:'#e8b84b44'}}>Regenerate</button>
                 <button onClick={()=>setShowExport(false)} style={S.ghost}>Close</button>
               </div>
+              {saving&&(
+                <div style={{display:'flex',alignItems:'center',gap:8,fontFamily:'monospace',fontSize:11,color:'#888'}}>
+                  <div style={{width:11,height:11,borderRadius:'50%',border:'2px solid transparent',borderTopColor:'#e8b84b',animation:'spin 0.9s linear infinite',flexShrink:0}}/>
+                  Saving to inventory...
+                </div>
+              )}
+              {suggestedPrice&&(
+                <div style={{padding:'12px 20px',background:'#0a150a',border:'1px solid #4db64433',borderRadius:2,textAlign:'center',minWidth:200}}>
+                  <div style={{fontFamily:'monospace',fontSize:10,color:'#666',letterSpacing:'0.18em',textTransform:'uppercase',marginBottom:4}}>Suggested listing price</div>
+                  <div style={{fontFamily:"'Playfair Display',serif",fontSize:28,color:'#81C784',fontWeight:700}}>${suggestedPrice.toFixed(2)}</div>
+                </div>
+              )}
+              {saveError&&(
+                <div style={{fontFamily:'monospace',fontSize:11,color:'#EF9A9A'}}>{saveError}</div>
+              )}
+              {savedRecordId&&(
+                <button onClick={()=>window.location.href='/inventory'} style={{...S.ghost,color:'#4FC3F7',borderColor:'#4FC3F744',letterSpacing:'0.08em'}}>
+                  View in Inventory →
+                </button>
+              )}
             </div>
 
           </div>

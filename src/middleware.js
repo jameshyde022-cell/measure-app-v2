@@ -47,8 +47,5 @@ export async function middleware(request) {
 }
 
 export const config = {
-  // '/app' covers the exact path; '/app/:path*' covers all sub-paths.
-  // Using both is necessary because :path* (zero-or-more) is treated
-  // inconsistently across Next.js 14 patch versions for the exact root path.
-  matcher: ['/app', '/app/:path*'],
+  matcher: ['/app', '/app/:path*', '/inventory', '/inventory/:path*'],
 }
