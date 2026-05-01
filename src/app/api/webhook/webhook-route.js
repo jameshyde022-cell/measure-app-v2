@@ -19,14 +19,24 @@ export async function POST(req) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
-  // When a subscription is created (trial started or paid)
+  // Grant pro access when checkout completes
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    const email = session.customer_details?.email || session.customer_email;
+    if (email) {
+      await supabase
+        .from('subscribers')
+        .upsert({ email: email.toLowerCase(), is_pro: true }, { onConflict: 'email' });
+    }
+  }
+
+  // Track referral conversions when a subscription is created
   if (event.type === 'customer.subscription.created') {
     const subscription = event.data.object;
     const influencerId = subscription.metadata?.influencer_id;
     const referralCode = subscription.metadata?.referral_code;
 
     if (influencerId && referralCode) {
-      // Update referral to converted
       await supabase
         .from('referrals')
         .update({
@@ -39,7 +49,6 @@ export async function POST(req) {
         .order('created_at', { ascending: false })
         .limit(1);
 
-      // Credit influencer $3
       await supabase.rpc('increment_earnings', {
         influencer_id: influencerId,
         amount: 300,

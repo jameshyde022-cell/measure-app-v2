@@ -29,8 +29,15 @@ function incrementExportCount() {
   try { localStorage.setItem(todayKey(), String(getExportCount()+1)); } catch(e) {}
 }
 
-function isPro() {
-  try { return localStorage.getItem('measure_pro')==='true'; } catch(e) { return false; }
+async function fetchProStatus() {
+  try {
+    const res = await fetch('/api/auth/me')
+    if (!res.ok) return false
+    const data = await res.json()
+    return data.pro === true
+  } catch {
+    return false
+  }
 }
 
 function mid(a,b) { return {x:(a.x+b.x)/2,y:(a.y+b.y)/2}; }
@@ -173,8 +180,8 @@ export default function MeasureTool() {
 
   // Load pro status and export count on mount
   useEffect(()=>{
-    setPro(isPro());
     setExportCount(getExportCount());
+    fetchProStatus().then(setPro);
   },[]);
 
   useEffect(()=>{

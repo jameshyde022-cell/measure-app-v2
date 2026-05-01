@@ -6,9 +6,6 @@ export default function SuccessPage() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    try {
-      localStorage.setItem('measure_pro', 'true');
-    } catch(e) {}
     setReady(true);
   }, []);
 
