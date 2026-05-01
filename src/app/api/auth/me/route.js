@@ -28,7 +28,10 @@ async function getEmailFromRequest(request) {
 
 export async function GET(request) {
   const email = await getEmailFromRequest(request)
+  console.log('[auth/me] extracted email:', email)
+
   if (!email) {
+    console.log('[auth/me] no valid session cookie — returning 401')
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
@@ -37,11 +40,18 @@ export async function GET(request) {
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
   )
 
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from('subscribers')
     .select('is_pro')
     .eq('email', email.toLowerCase())
     .maybeSingle()
 
-  return Response.json({ email, pro: data?.is_pro === true })
+  console.log('[auth/me] supabase query for:', email.toLowerCase())
+  console.log('[auth/me] supabase data:', JSON.stringify(data))
+  console.log('[auth/me] supabase error:', JSON.stringify(error))
+
+  const result = { email, pro: data?.is_pro === true }
+  console.log('[auth/me] returning:', JSON.stringify(result))
+
+  return Response.json(result)
 }
