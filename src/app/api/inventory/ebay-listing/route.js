@@ -13,6 +13,7 @@ function csvCell(value) {
 }
 
 function buildCsv(listing, imageUrl) {
+  const specs = listing.itemSpecifics || {}
   // Description is an HTML field — newlines become <br>
   const descHtml = (listing.description || '').replace(/\n/g, '<br>')
 
@@ -22,7 +23,7 @@ function buildCsv(listing, imageUrl) {
     '#INFO Action and Category ID are required fields. 1) Set Action to Draft 2) Please find the category ID for your listings here: https://pages.ebay.com/sellerinformation/news/categorychanges.html,,,,,,,,,,',
     '"#INFO After you\'ve successfully uploaded your draft from the Seller Hub Reports tab, complete your drafts to active listings here: https://www.ebay.com/sh/lst/drafts",,,,,,,,,,',
     '#INFO,,,,,,,,,,',
-    'Action(SiteID=US|Country=US|Currency=USD|Version=1193|CC=UTF-8),Custom label (SKU),Category ID,Title,UPC,Price,Quantity,Item photo URL,Condition ID,Description,Format',
+    'Action(SiteID=US|Country=US|Currency=USD|Version=1193|CC=UTF-8),Custom label (SKU),Category ID,Title,UPC,Price,Quantity,Item photo URL,Condition ID,Description,Format,C:Brand,C:Size,C:Type,C:Style,C:Color,C:Outer Shell Material,C:Department,C:Era,C:Pattern,C:Occasion',
     [
       'Draft',
       '',
@@ -35,6 +36,16 @@ function buildCsv(listing, imageUrl) {
       '3000',
       csvCell(descHtml),
       'FixedPrice',
+      csvCell(specs.Brand || ''),
+      csvCell(specs.Size || ''),
+      csvCell(specs.Style || ''),
+      csvCell(specs.Style || ''),
+      csvCell(specs.Color || ''),
+      csvCell(specs.Material || ''),
+      'Women',
+      csvCell(specs.Era || ''),
+      csvCell(specs.Pattern || ''),
+      csvCell(specs.Occasion || ''),
     ].join(','),
   ]
 
