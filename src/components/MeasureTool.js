@@ -429,6 +429,7 @@ export default function MeasureTool() {
     setSaving(true); setSuggestedPrice(null); setSavedRecordId(null); setSaveError(null);
     setTimeout(()=>exportSectionRef.current?.scrollIntoView({behavior:'smooth',block:'start'}),150);
     // Use the DOM-attached exportRef canvas — more reliable than the off-screen ec canvas
+    // JPEG at 80% quality is 5-10x smaller than PNG — keeps upload well under Vercel's 10s limit
     exportRef.current.toBlob(async(blob)=>{
       if(!blob){
         console.error('[save-export] toBlob returned null — canvas may be tainted or empty');
@@ -439,7 +440,7 @@ export default function MeasureTool() {
       console.log('[save-export] blob size:', blob.size, 'bytes');
       try{
         const fd=new FormData();
-        fd.append('image',blob,'export.png');
+        fd.append('image',blob,'export.jpg');
         fd.append('brand',brand);
         fd.append('clothingType',clothingType);
         fd.append('condition',condition);
@@ -464,7 +465,7 @@ export default function MeasureTool() {
         setSaveError('Network error during inventory save — check console for details');
       }
       setSaving(false);
-    },'image/png');
+    },'image/jpeg',0.8);
   };
 
   const handleDownload=()=>{
