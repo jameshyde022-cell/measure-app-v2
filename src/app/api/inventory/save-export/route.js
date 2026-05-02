@@ -53,10 +53,15 @@ export async function POST(request) {
   let imageBuffer
   try {
     imageBuffer = Buffer.from(await imageFile.arrayBuffer())
-    console.log('[save-export] image buffer size:', imageBuffer.length, 'bytes')
+    console.log('[save-export] image — size:', imageBuffer.length, 'bytes | contentType: image/png | fileType:', imageFile.type)
   } catch (e) {
     console.error('[save-export] failed to read image buffer:', e.message)
     return Response.json({ error: 'Failed to read image', details: e.message }, { status: 400 })
+  }
+
+  if (imageBuffer.length === 0) {
+    console.error('[save-export] image buffer is empty — aborting upload')
+    return Response.json({ error: 'Image buffer is empty' }, { status: 400 })
   }
 
   // ── 3. Supabase client ────────────────────────────────────────────────────
@@ -68,21 +73,51 @@ export async function POST(request) {
     return Response.json({ error: 'Database configuration error', details: e.message }, { status: 500 })
   }
 
-  // ── 4. Upload to Supabase Storage ─────────────────────────────────────────
-  const safeEmail = email.replace(/[^a-z0-9]/gi, '_').toLowerCase()
+  // Log which key type is in use — service_role bypasses all storage policies
+  const activeKeyType = process.env.SUPABASE_SERVICE_ROLE_KEY ? 'service_role' : 'anon'
+  console.log('[save-export] Supabase key type in use:', activeKeyType)
+  if (activeKeyType === 'anon') {
+    console.warn('[save-export] WARNING: using anon key — storage uploads may be blocked by RLS. Set SUPABASE_SERVICE_ROLE_KEY in Vercel env vars.')
+  }
+
+  // ── 4. Verify bucket exists before attempting upload ──────────────────────
+  const { data: bucketInfo, error: bucketError } = await supabase.storage.getBucket('exported-images')
+  if (bucketError) {
+    console.error('[save-export] bucket check failed — statusCode:', bucketError.statusCode, '| message:', bucketError.message)
+    console.error('[save-export] bucket error detail:', JSON.stringify(bucketError))
+  } else {
+    console.log('[save-export] bucket "exported-images" exists — public:', bucketInfo?.public)
+  }
+
+  // ── 5. Upload to Supabase Storage ─────────────────────────────────────────
+  // Sanitize email: lowercase alphanumeric and underscores only, collapse runs
+  const safeEmail = email.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')
   const fileName  = `${safeEmail}/${Date.now()}.png`
-  console.log('[save-export] uploading to storage path:', fileName)
+  console.log('[save-export] upload path:', fileName, '| bytes:', imageBuffer.length)
+
+  // Pass as Uint8Array — more reliable across Supabase JS versions than Buffer
+  const uploadBytes = new Uint8Array(imageBuffer)
 
   const { data: uploadData, error: uploadError } = await supabase.storage
     .from('exported-images')
-    .upload(fileName, imageBuffer, { contentType: 'image/png', upsert: true })
+    .upload(fileName, uploadBytes, { contentType: 'image/png', upsert: true })
 
   if (uploadError) {
-    console.error('[save-export] storage upload failed — code:', uploadError.statusCode, '| message:', uploadError.message, '| error:', JSON.stringify(uploadError))
+    console.error('[save-export] storage upload FAILED:', JSON.stringify({
+      message:    uploadError.message,
+      statusCode: uploadError.statusCode,
+      name:       uploadError.name,
+      cause:      uploadError.cause,
+      error:      uploadError.error,
+    }))
+    console.error('[save-export] full uploadError object:', uploadError)
     return Response.json({
-      error: 'Failed to upload image to storage',
+      error:   'Failed to upload image to storage',
       details: uploadError.message,
-      hint: 'Make sure the "exported-images" bucket exists in Supabase Storage and is set to public.',
+      code:    uploadError.statusCode,
+      hint:    activeKeyType === 'anon'
+        ? 'Using anon key — set SUPABASE_SERVICE_ROLE_KEY in Vercel env vars to bypass storage RLS.'
+        : 'Run supabase/migrations/002_fix_rls.sql in the Supabase SQL Editor to configure the bucket and storage policies.',
     }, { status: 500 })
   }
 
