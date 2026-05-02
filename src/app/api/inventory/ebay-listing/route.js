@@ -5,11 +5,12 @@ function isRealAnthropicKey(key) {
   return typeof key === 'string' && key.startsWith('sk-ant-') && key.length > 20
 }
 
+// eBay condition IDs updated Feb 2025 — three tiers for pre-owned apparel
 const CONDITION_IDS = {
-  'Excellent / Like new': { id: 4000, label: 'Pre-Owned - Like New' },
-  'Very good': { id: 5000, label: 'Pre-Owned - Good' },
-  'Good': { id: 5000, label: 'Pre-Owned - Good' },
-  'Fair / Worn': { id: 6000, label: 'Pre-Owned - Acceptable' },
+  'Excellent / Like new': { id: 2990, label: 'Pre-Owned - Excellent' },
+  'Very good':            { id: 3000, label: 'Pre-Owned - Good' },
+  'Good':                 { id: 3000, label: 'Pre-Owned - Good' },
+  'Fair / Worn':          { id: 6000, label: 'Pre-Owned - Fair' },
 }
 
 function csvCell(value) {
@@ -19,11 +20,11 @@ function csvCell(value) {
   return '"' + str.replace(/"/g, '""') + '"'
 }
 
-function buildCsv(listing, brand, taggedSize) {
-  const conditionEntry = CONDITION_IDS[listing.condition] || { id: 5000, label: listing.condition || 'Pre-Owned - Good' }
+function buildCsv(listing, brand, taggedSize, imageUrl) {
+  const conditionEntry = CONDITION_IDS[listing.condition] || { id: 3000, label: 'Pre-Owned - Good' }
   const specs = listing.itemSpecifics || {}
 
-  // Description is an HTML field in Seller Hub — convert newlines to <br>
+  // Description is an HTML field — newlines become <br>, already HTML from prompt
   const descHtml = (listing.description || '').replace(/\n/g, '<br>')
 
   const headers = [
@@ -49,24 +50,18 @@ function buildCsv(listing, brand, taggedSize) {
     'StartPrice',
     'BuyItNowPrice',
     'Quantity',
-    'PaymentInstructions',
-    'ShippingType',
-    'ShippingService-1:Option',
-    'ShippingService-1:Cost',
-    'ShippingService-2:Option',
-    'ShippingService-2:Cost',
+    'PicURL',
+    'ShippingProfileName',
+    'ReturnProfileName',
+    'PaymentProfileName',
     'DispatchTimeMax',
-    'ReturnsAcceptedOption',
-    'ReturnWithin',
-    'RefundOption',
-    'ShippingCostPaidBy',
     'Location',
     'PostalCode',
   ].join(',')
 
   const row = [
     'Add',
-    csvCell(listing.categoryId || '11554'),
+    csvCell(listing.categoryId || '182047'),
     '',
     csvCell(listing.title || ''),
     '',
@@ -87,17 +82,11 @@ function buildCsv(listing, brand, taggedSize) {
     listing.price || '',
     '',
     '1',
+    csvCell(imageUrl || ''),
     '',
-    'Flat',
-    'USPSFirstClass',
-    '0',
     '',
     '',
     '3',
-    'ReturnsAccepted',
-    'Days_30',
-    'MoneyBack',
-    'Buyer',
     'Honolulu, HI',
     '96822',
   ].join(',')
@@ -131,7 +120,7 @@ export async function POST(request) {
       max_tokens: 2048,
       messages: [{
         role: 'user',
-        content: `You are an expert eBay listing writer specializing in secondhand clothing. Create a complete, SEO-optimized eBay listing for this item.
+        content: `You are a vintage fashion specialist and archival consignment expert writing eBay listings. Your tone is editorial, informed, and confident — like a Vestiaire Collective or What Goes Around Comes Around specialist, not an eBay listing bot.
 
 Brand: ${brand || 'Unknown'}
 Clothing Type: ${clothingType || 'Unknown'}
@@ -143,14 +132,24 @@ Suggested Price: ${suggestedPrice ? `$${suggestedPrice}` : 'Unknown'}
 Measurements:
 ${measurementsText}
 
+Write the description as HTML using this exact structure:
+
+Opening paragraph: Establish the piece's place in the brand's history. Reference the specific era, the cultural moment, the designer's obsession or theme at the time. Be specific — not "this is a great piece" but "this is a definitive example of [Brand]'s [era] obsession with [specific theme]." Use <p> tags.
+
+Design Details section: A <p><b>Design Details</b></p> heading followed by bullet points using <ul><li> tags. Each bullet has a <b>Label:</b> followed by precise collector-level description of one design element — the print, hardware, fabric, construction, trim, or finishing detail.
+
+Closing: One or two sentences in a <p> tag on wearability, styling context, or why this piece matters to a collector.
+
+Never use: "great condition", "must have", "perfect for any wardrobe", "vintage vibes", or any filler phrase. Every sentence must contain specific, accurate information about the piece.
+
 Return a JSON object with exactly this structure (no markdown, no code fences, pure JSON only):
 {
-  "title": "eBay listing title under 80 characters, keyword-rich",
-  "description": "Full listing description, 3-5 paragraphs covering item details, measurements, condition notes, and shipping info. Plain text, no HTML.",
-  "category": "Most specific eBay clothing category name",
-  "categoryId": "eBay category ID as a number (e.g. 11554 for Women's Jeans, 57989 for Men's Jeans, 57990 for Men's Shirts, 15724 for Women's Tops, 63861 for Women's Dresses)",
+  "title": "eBay listing title under 80 characters — keyword-rich, specific, no puffery",
+  "description": "Full HTML description structured as described above",
+  "category": "Most specific eBay vintage clothing category name",
+  "categoryId": "eBay category ID — use 182047 for Women's Vintage, 165330 for Men's Vintage, or a more specific subcategory if appropriate",
   "price": "recommended listing price as a number",
-  "condition": "Excellent / Like new OR Very good OR Good OR Fair / Worn — match the input condition",
+  "condition": "Excellent / Like new OR Very good OR Good OR Fair / Worn — match the input condition exactly",
   "itemSpecifics": {
     "Brand": "${brand || ''}",
     "Size": "${taggedSize || ''}",
@@ -160,7 +159,7 @@ Return a JSON object with exactly this structure (no markdown, no code fences, p
     "Department": "Women or Men",
     "Type": "${clothingType || ''}"
   },
-  "keywords": ["array", "of", "10", "targeted", "seo", "search", "keywords", "for", "this", "item"]
+  "keywords": ["array", "of", "10", "targeted", "collector-level", "search", "keywords", "for", "this", "specific", "item"]
 }`,
       }],
     })
@@ -173,6 +172,6 @@ Return a JSON object with exactly this structure (no markdown, no code fences, p
     return Response.json({ error: 'Failed to generate listing', details: e.message }, { status: 500 })
   }
 
-  const csv = buildCsv(listing, brand, taggedSize)
+  const csv = buildCsv(listing, brand, taggedSize, imageUrl)
   return Response.json({ listing, csv })
 }
