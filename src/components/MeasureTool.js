@@ -153,6 +153,7 @@ export default function MeasureTool() {
   const [condition,setCondition]       = useState('');
   const [taggedSize,setTaggedSize]     = useState('');
   const [flaws,setFlaws]               = useState('');
+  const [weightOz,setWeightOz]         = useState('');
   const [saving,setSaving]             = useState(false);
   const [saveError,setSaveError]       = useState(null);
   const [suggestedPrice,setSuggestedPrice] = useState(null);
@@ -444,6 +445,7 @@ export default function MeasureTool() {
         fd.append('condition',condition);
         fd.append('taggedSize',taggedSize);
         fd.append('flaws',flaws);
+        fd.append('weightOz',weightOz);
         fd.append('measurements',JSON.stringify(lines));
         const res=await fetch('/api/inventory/save-export',{method:'POST',body:fd});
         if(res.ok){
@@ -917,6 +919,7 @@ export default function MeasureTool() {
                     </select>
                   </div>
                   <div><label style={S.lbl}>Tagged Size</label><input type='text' placeholder='e.g. M, 32, 10' value={taggedSize} onChange={e=>setTaggedSize(e.target.value)} style={S.inp}/></div>
+                  <div><label style={S.lbl}>Weight (oz)</label><input type='number' step='0.1' min='0' placeholder='e.g. 12' value={weightOz} onChange={e=>setWeightOz(e.target.value)} style={S.inp}/></div>
                   <div>
                     <label style={S.lbl}>Flaws / Damage</label>
                     <textarea placeholder='Describe any flaws or damage...' value={flaws} onChange={e=>setFlaws(e.target.value)} style={{...S.inp,minHeight:56,resize:'vertical'}}/>

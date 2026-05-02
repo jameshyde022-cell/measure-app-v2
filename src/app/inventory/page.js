@@ -104,6 +104,7 @@ function DetailModal({ record: initialRecord, onClose, onUpdate }) {
           measurements: record.measurements || [],
           suggestedPrice: record.suggested_price,
           imageUrl: record.image_url,
+          weightOz: record.weight_oz,
         }),
       });
       if (res.ok) {

@@ -20,7 +20,14 @@ function csvCell(value) {
   return '"' + str.replace(/"/g, '""') + '"'
 }
 
-function buildCsv(listing, brand, taggedSize, imageUrl) {
+function shippingProfile(weightOz) {
+  if (weightOz === null || weightOz === undefined || weightOz === '') return ''
+  return Number(weightOz) <= 16
+    ? 'Calculated: USPSParcel , 2 business days'
+    : 'padded env'
+}
+
+function buildCsv(listing, brand, taggedSize, imageUrl, weightOz) {
   const conditionEntry = CONDITION_IDS[listing.condition] || { id: 3000, label: 'Pre-Owned - Good' }
   const specs = listing.itemSpecifics || {}
 
@@ -83,9 +90,9 @@ function buildCsv(listing, brand, taggedSize, imageUrl) {
     '',
     '1',
     csvCell(imageUrl || ''),
-    '',
-    '',
-    '',
+    csvCell(shippingProfile(weightOz)),
+    'No Return Accepted',
+    'eBay Managed Payments',
     '3',
     'Honolulu, HI',
     '96822',
@@ -105,7 +112,7 @@ export async function POST(request) {
   let body
   try { body = await request.json() } catch { return Response.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
-  const { brand, clothingType, condition, taggedSize, flaws, measurements = [], suggestedPrice, imageUrl } = body
+  const { brand, clothingType, condition, taggedSize, flaws, measurements = [], suggestedPrice, imageUrl, weightOz } = body
 
   const measurementsText = measurements.length > 0
     ? measurements.map((m, i) => `${i + 1}. ${m.name}${m.value ? `: ${m.value}${m.unit}` : ''}`).join('\n')
@@ -172,6 +179,6 @@ Return a JSON object with exactly this structure (no markdown, no code fences, p
     return Response.json({ error: 'Failed to generate listing', details: e.message }, { status: 500 })
   }
 
-  const csv = buildCsv(listing, brand, taggedSize, imageUrl)
+  const csv = buildCsv(listing, brand, taggedSize, imageUrl, weightOz)
   return Response.json({ listing, csv })
 }
