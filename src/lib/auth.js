@@ -27,8 +27,20 @@ export async function getEmailFromRequest(request) {
 }
 
 export function getSupabase() {
-  return createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
-  )
+  // Support both SUPABASE_URL and NEXT_PUBLIC_SUPABASE_URL (either may be set in Vercel)
+  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+  const key =
+    process.env.SUPABASE_SERVICE_ROLE_KEY ||
+    process.env.SUPABASE_ANON_KEY ||
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+
+  if (!url || !key) {
+    console.error(
+      '[getSupabase] Missing Supabase credentials. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_ANON_KEY) in your environment.'
+    )
+    throw new Error('Supabase credentials not configured')
+  }
+
+  console.log('[getSupabase] connecting to:', url.slice(0, 40))
+  return createClient(url, key)
 }

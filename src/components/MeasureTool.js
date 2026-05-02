@@ -427,8 +427,15 @@ export default function MeasureTool() {
     setShowExport(true);
     setSaving(true); setSuggestedPrice(null); setSavedRecordId(null); setSaveError(null);
     setTimeout(()=>exportSectionRef.current?.scrollIntoView({behavior:'smooth',block:'start'}),150);
-    ec.toBlob(async(blob)=>{
-      if(!blob){setSaving(false);return;}
+    // Use the DOM-attached exportRef canvas — more reliable than the off-screen ec canvas
+    exportRef.current.toBlob(async(blob)=>{
+      if(!blob){
+        console.error('[save-export] toBlob returned null — canvas may be tainted or empty');
+        setSaveError('Failed to read export image for upload');
+        setSaving(false);
+        return;
+      }
+      console.log('[save-export] blob size:', blob.size, 'bytes');
       try{
         const fd=new FormData();
         fd.append('image',blob,'export.png');
@@ -439,9 +446,20 @@ export default function MeasureTool() {
         fd.append('flaws',flaws);
         fd.append('measurements',JSON.stringify(lines));
         const res=await fetch('/api/inventory/save-export',{method:'POST',body:fd});
-        if(res.ok){const d=await res.json();setSuggestedPrice(d.suggestedPrice);setSavedRecordId(d.recordId);}
-        else setSaveError('Saved locally — inventory save failed.');
-      }catch{setSaveError('Saved locally — inventory save failed.');}
+        if(res.ok){
+          const d=await res.json();
+          setSuggestedPrice(d.suggestedPrice);
+          setSavedRecordId(d.recordId);
+        } else {
+          let errMsg='Inventory save failed';
+          try{const e=await res.json();errMsg=e.error||(e.hint?e.error+' — '+e.hint:errMsg);}catch{}
+          console.error('[save-export] API error',res.status,errMsg);
+          setSaveError(errMsg);
+        }
+      }catch(e){
+        console.error('[save-export] fetch error:',e);
+        setSaveError('Network error during inventory save — check console for details');
+      }
       setSaving(false);
     },'image/png');
   };
