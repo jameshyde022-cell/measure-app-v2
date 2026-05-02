@@ -446,6 +446,7 @@ export default function MeasureTool() {
         fd.append('taggedSize',taggedSize);
         fd.append('flaws',flaws);
         fd.append('weightOz',weightOz);
+        fd.append('mannequin_type',gender);
         fd.append('measurements',JSON.stringify(lines));
         const res=await fetch('/api/inventory/save-export',{method:'POST',body:fd});
         if(res.ok){

@@ -5,6 +5,51 @@ function isRealAnthropicKey(key) {
   return typeof key === 'string' && key.startsWith('sk-ant-') && key.length > 20
 }
 
+// Verified eBay leaf category IDs (May 2026)
+const CATEGORIES = {
+  women: {
+    default:   53159, // Women's Tops — fallback
+    top:       53159, tops:      53159, blouse: 53159, shirt:   53159,
+    dress:     63861, dresses:   63861,
+    skirt:     63864, skirts:    63864,
+    pants:     63863, trousers:  63863, shorts: 63863,
+    jeans:     11554, denim:     11554,
+    blazer:    63862, jacket:    63862, coat:   63862, vest:    63862,
+    sweater:   63866, knitwear:  63866, jumper: 63866,
+    jumpsuit:  3009,  romper:    3009,
+    suit:      63865,
+  },
+  men: {
+    default:   57990, // Men's Shirts — fallback
+    top:       57990, tops:      57990, shirt:  57990, blouse: 57990,
+    tshirt:    15687, tee:       15687,
+    pants:     57989, trousers:  57989, shorts: 57989,
+    jeans:     11483, denim:     11483,
+    blazer:    3001,  suit:      3001,
+    jacket:    57988, coat:      57988, vest:   57988,
+    sweater:   11484, knitwear:  11484, jumper: 11484,
+  },
+}
+
+function resolveCategoryId(mannequinType, clothingType) {
+  const gender = mannequinType === 'male' ? 'men' : 'women'
+  const map = CATEGORIES[gender]
+  if (!clothingType) return map.default
+  // normalise: lowercase, strip spaces/hyphens, match first keyword found
+  const norm = clothingType.toLowerCase().replace(/[-\s]/g, '')
+  for (const [key, id] of Object.entries(map)) {
+    if (key === 'default') continue
+    if (norm.includes(key)) return id
+  }
+  return map.default
+}
+
+function departmentLabel(mannequinType) {
+  if (mannequinType === 'male')   return 'Men'
+  if (mannequinType === 'female') return 'Women'
+  return 'Unisex'
+}
+
 function csvCell(value) {
   if (value === null || value === undefined || value === '') return ''
   const str = String(value)
@@ -12,12 +57,12 @@ function csvCell(value) {
   return '"' + str.replace(/"/g, '""') + '"'
 }
 
-function buildCsv(listing, imageUrl) {
-  const specs = listing.itemSpecifics || {}
-  // Description is an HTML field — newlines become <br>
-  const descHtml = (listing.description || '').replace(/\n/g, '<br>')
+function buildCsv(listing, imageUrl, mannequinType, clothingType) {
+  const specs      = listing.itemSpecifics || {}
+  const categoryId = resolveCategoryId(mannequinType, clothingType)
+  const department = departmentLabel(mannequinType)
+  const descHtml   = (listing.description || '').replace(/\n/g, '<br>')
 
-  // eBay official draft template info lines — must appear exactly as-is
   const lines = [
     '#INFO,Version=0.0.2,Template= eBay-draft-listings-template_US,,,,,,,,',
     '#INFO Action and Category ID are required fields. 1) Set Action to Draft 2) Please find the category ID for your listings here: https://pages.ebay.com/sellerinformation/news/categorychanges.html,,,,,,,,,,',
@@ -27,7 +72,7 @@ function buildCsv(listing, imageUrl) {
     [
       'Draft',
       '',
-      '57988',
+      categoryId,
       csvCell(listing.title || ''),
       '',
       listing.price || '',
@@ -38,11 +83,11 @@ function buildCsv(listing, imageUrl) {
       'FixedPrice',
       csvCell(specs.Brand || ''),
       csvCell(specs.Size || ''),
-      csvCell(specs.Style || ''),
+      csvCell(specs.Type || clothingType || ''),
       csvCell(specs.Style || ''),
       csvCell(specs.Color || ''),
       csvCell(specs.Material || ''),
-      'Women',
+      department,
       csvCell(specs.Era || ''),
       csvCell(specs.Pattern || ''),
       csvCell(specs.Occasion || ''),
@@ -63,7 +108,8 @@ export async function POST(request) {
   let body
   try { body = await request.json() } catch { return Response.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
-  const { brand, clothingType, condition, taggedSize, flaws, measurements = [], suggestedPrice, imageUrl } = body
+  const { brand, clothingType, condition, taggedSize, flaws, measurements = [], suggestedPrice, imageUrl, mannequinType } = body
+  const gender = mannequinType === 'male' ? 'Men' : 'Women'
 
   const measurementsText = measurements.length > 0
     ? measurements.map((m, i) => `${i + 1}. ${m.name}${m.value ? `: ${m.value}${m.unit}` : ''}`).join('\n')
@@ -82,6 +128,7 @@ export async function POST(request) {
 
 Brand: ${brand || 'Unknown'}
 Clothing Type: ${clothingType || 'Unknown'}
+Department: ${gender}
 Condition: ${condition || 'Good'}
 Tagged Size: ${taggedSize || 'Unknown'}
 Flaws/Damage: ${flaws || 'None noted'}
@@ -109,11 +156,13 @@ Return a JSON object with exactly this structure (no markdown, no code fences, p
   "itemSpecifics": {
     "Brand": "${brand || ''}",
     "Size": "${taggedSize || ''}",
+    "Type": "${clothingType || ''}",
     "Color": "infer from context or leave blank",
     "Material": "infer from context or leave blank",
     "Style": "infer from context or leave blank",
-    "Department": "Women or Men",
-    "Type": "${clothingType || ''}"
+    "Era": "infer decade/era if discernible (e.g. 90s, Y2K, 80s) or leave blank",
+    "Pattern": "infer if applicable (e.g. Solid, Floral, Striped, Graphic Print) or leave blank",
+    "Occasion": "infer if applicable (e.g. Casual, Formal, Party) or leave blank"
   },
   "keywords": ["array", "of", "10", "targeted", "collector-level", "search", "keywords", "for", "this", "specific", "item"]
 }`,
@@ -128,6 +177,6 @@ Return a JSON object with exactly this structure (no markdown, no code fences, p
     return Response.json({ error: 'Failed to generate listing', details: e.message }, { status: 500 })
   }
 
-  const csv = buildCsv(listing, imageUrl)
+  const csv = buildCsv(listing, imageUrl, mannequinType, clothingType)
   return Response.json({ listing, csv })
 }

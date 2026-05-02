@@ -43,8 +43,9 @@ export async function POST(request) {
   const condition    = formData.get('condition')    || ''
   const taggedSize   = formData.get('taggedSize')   || ''
   const flaws        = formData.get('flaws')        || ''
-  const weightOz     = formData.get('weightOz')     || ''
-  let measurements   = []
+  const weightOz      = formData.get('weightOz')      || ''
+  const mannequinType = formData.get('mannequin_type') || ''
+  let measurements    = []
   try { measurements = JSON.parse(formData.get('measurements') || '[]') } catch {}
 
   console.log('[save-export] metadata — brand:', brand, '| type:', clothingType, '| condition:', condition)
@@ -106,7 +107,8 @@ export async function POST(request) {
       condition:     condition    || null,
       tagged_size:   taggedSize   || null,
       flaws:         flaws        || null,
-      weight_oz:     weightOz    ? parseFloat(weightOz) : null,
+      weight_oz:      weightOz    ? parseFloat(weightOz) : null,
+      mannequin_type: mannequinType || null,
       measurements:  measurements.length > 0 ? measurements : null,
       suggested_price: null,
     })
