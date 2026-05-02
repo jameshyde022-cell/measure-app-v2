@@ -6,6 +6,34 @@ function isRealAnthropicKey(key) {
   return typeof key === 'string' && key.startsWith('sk-ant-') && key.length > 20
 }
 
+// Attempt a full insert; if a column doesn't exist yet (migration not run),
+// fall back to the base columns from migration 001 so the save never hard-fails
+// due to a missing optional column.
+async function insertExportRecord(supabase, full) {
+  console.log('[save-export] DB insert — fields:', Object.keys(full).join(', '))
+  const { data, error } = await supabase
+    .from('exported_images')
+    .insert(full)
+    .select('id')
+    .single()
+
+  if (!error) return { data, error: null }
+
+  // 42703 = column does not exist — migrations 003/004 not yet run
+  if (error.code === '42703') {
+    console.warn('[save-export] DB insert: column not found (', error.message, ') — retrying with base columns only')
+    const { weight_oz, mannequin_type, ...base } = full
+    const fallback = await supabase
+      .from('exported_images')
+      .insert(base)
+      .select('id')
+      .single()
+    return fallback
+  }
+
+  return { data: null, error }
+}
+
 export async function POST(request) {
   console.log('[save-export] POST received')
 
@@ -39,33 +67,34 @@ export async function POST(request) {
     return Response.json({ error: 'No image provided' }, { status: 400 })
   }
 
-  const brand        = formData.get('brand')        || ''
-  const clothingType = formData.get('clothingType') || ''
-  const condition    = formData.get('condition')    || ''
-  const taggedSize   = formData.get('taggedSize')   || ''
-  const flaws        = formData.get('flaws')        || ''
+  const brand         = formData.get('brand')         || ''
+  const clothingType  = formData.get('clothingType')  || ''
+  const condition     = formData.get('condition')     || ''
+  const taggedSize    = formData.get('taggedSize')     || ''
+  const flaws         = formData.get('flaws')         || ''
   const weightOz      = formData.get('weightOz')      || ''
   const mannequinType = formData.get('mannequin_type') || ''
-  let measurements    = []
+  let measurements = []
   try { measurements = JSON.parse(formData.get('measurements') || '[]') } catch {}
 
-  console.log('[save-export] metadata — brand:', brand, '| type:', clothingType, '| condition:', condition)
+  console.log('[save-export] metadata — brand:', brand, '| type:', clothingType, '| condition:', condition, '| mannequin:', mannequinType, '| weightOz:', weightOz)
 
+  // ── 3. Read image buffer ──────────────────────────────────────────────────
   let imageBuffer
   try {
     imageBuffer = Buffer.from(await imageFile.arrayBuffer())
-    console.log('[save-export] image — size:', imageBuffer.length, 'bytes | contentType: image/png | fileType:', imageFile.type)
+    console.log('[save-export] image — raw size:', imageBuffer.length, 'bytes | fileType:', imageFile.type)
   } catch (e) {
     console.error('[save-export] failed to read image buffer:', e.message)
     return Response.json({ error: 'Failed to read image', details: e.message }, { status: 400 })
   }
 
   if (imageBuffer.length === 0) {
-    console.error('[save-export] image buffer is empty — aborting upload')
+    console.error('[save-export] image buffer is empty — aborting')
     return Response.json({ error: 'Image buffer is empty' }, { status: 400 })
   }
 
-  // ── 3. Compress image — resize to max 1200px, JPEG 80% ───────────────────
+  // ── 4. Compress — resize to max 1200px, JPEG 80% ─────────────────────────
   let uploadBuffer
   try {
     uploadBuffer = await sharp(imageBuffer)
@@ -78,6 +107,7 @@ export async function POST(request) {
     uploadBuffer = imageBuffer
   }
 
+  // ── 5. Supabase client ────────────────────────────────────────────────────
   let supabase
   try {
     supabase = getSupabase()
@@ -86,95 +116,82 @@ export async function POST(request) {
     return Response.json({ error: 'Database configuration error', details: e.message }, { status: 500 })
   }
 
-  // Log which key type is in use — service_role bypasses all storage policies
   const activeKeyType = process.env.SUPABASE_SERVICE_ROLE_KEY ? 'service_role' : 'anon'
-  console.log('[save-export] Supabase key type in use:', activeKeyType)
+  console.log('[save-export] Supabase key type:', activeKeyType)
   if (activeKeyType === 'anon') {
-    console.warn('[save-export] WARNING: using anon key — storage uploads may be blocked by RLS. Set SUPABASE_SERVICE_ROLE_KEY in Vercel env vars.')
+    console.warn('[save-export] WARNING: using anon key — storage uploads may be blocked by RLS')
   }
 
-  // ── 4. Verify bucket exists before attempting upload ──────────────────────
+  // ── 6. Verify bucket ──────────────────────────────────────────────────────
   const { data: bucketInfo, error: bucketError } = await supabase.storage.getBucket('exported-images')
   if (bucketError) {
-    console.error('[save-export] bucket check failed — statusCode:', bucketError.statusCode, '| message:', bucketError.message)
-    console.error('[save-export] bucket error detail:', JSON.stringify(bucketError))
+    console.error('[save-export] bucket check failed:', bucketError.statusCode, bucketError.message)
   } else {
-    console.log('[save-export] bucket "exported-images" exists — public:', bucketInfo?.public)
+    console.log('[save-export] bucket "exported-images" confirmed — public:', bucketInfo?.public)
   }
 
-  // ── 5. Upload to Supabase Storage ─────────────────────────────────────────
-  // Sanitize email: lowercase alphanumeric and underscores only, collapse runs
+  // ── 7. Upload to Supabase Storage ─────────────────────────────────────────
   const safeEmail = email.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')
   const fileName  = `${safeEmail}/${Date.now()}.jpg`
-  console.log('[save-export] upload path:', fileName, '| bytes:', uploadBuffer.length)
-
-  const uploadBytes = new Uint8Array(uploadBuffer)
+  console.log('[save-export] uploading — path:', fileName, '| bytes:', uploadBuffer.length, '| contentType: image/jpeg')
 
   const { data: uploadData, error: uploadError } = await supabase.storage
     .from('exported-images')
-    .upload(fileName, uploadBytes, { contentType: 'image/jpeg', upsert: true })
+    .upload(fileName, new Uint8Array(uploadBuffer), { contentType: 'image/jpeg', upsert: true })
 
   if (uploadError) {
     console.error('[save-export] storage upload FAILED:', JSON.stringify({
-      message:    uploadError.message,
-      statusCode: uploadError.statusCode,
-      name:       uploadError.name,
-      cause:      uploadError.cause,
-      error:      uploadError.error,
+      message: uploadError.message, statusCode: uploadError.statusCode,
+      name: uploadError.name, cause: uploadError.cause, error: uploadError.error,
     }))
-    console.error('[save-export] full uploadError object:', uploadError)
     return Response.json({
       error:   'Failed to upload image to storage',
       details: uploadError.message,
       code:    uploadError.statusCode,
       hint:    activeKeyType === 'anon'
-        ? 'Using anon key — set SUPABASE_SERVICE_ROLE_KEY in Vercel env vars to bypass storage RLS.'
-        : 'Run supabase/migrations/002_fix_rls.sql in the Supabase SQL Editor to configure the bucket and storage policies.',
+        ? 'Set SUPABASE_SERVICE_ROLE_KEY in Vercel env vars to bypass storage RLS.'
+        : 'Run supabase/migrations/002_fix_rls.sql in the Supabase SQL Editor.',
     }, { status: 500 })
   }
 
-  console.log('[save-export] storage upload succeeded, path:', uploadData?.path)
+  console.log('[save-export] storage upload succeeded — path:', uploadData?.path)
 
-  const { data: { publicUrl } } = supabase.storage
-    .from('exported-images')
-    .getPublicUrl(fileName)
-
+  const { data: { publicUrl } } = supabase.storage.from('exported-images').getPublicUrl(fileName)
   console.log('[save-export] public URL:', publicUrl)
 
-  // ── 5. Insert DB record (without suggested_price first) ───────────────────
-  console.log('[save-export] inserting into exported_images...')
+  // ── 8. Insert DB record ───────────────────────────────────────────────────
+  console.log('[save-export] inserting DB record...')
 
-  const { data: record, error: dbError } = await supabase
-    .from('exported_images')
-    .insert({
-      user_email:    email,
-      image_url:     publicUrl,
-      brand:         brand        || null,
-      clothing_type: clothingType || null,
-      condition:     condition    || null,
-      tagged_size:   taggedSize   || null,
-      flaws:         flaws        || null,
-      weight_oz:      weightOz    ? parseFloat(weightOz) : null,
-      mannequin_type: mannequinType || null,
-      measurements:  measurements.length > 0 ? measurements : null,
-      suggested_price: null,
-    })
-    .select('id')
-    .single()
+  const { data: record, error: dbError } = await insertExportRecord(supabase, {
+    user_email:      email,
+    image_url:       publicUrl,
+    brand:           brand        || null,
+    clothing_type:   clothingType || null,
+    condition:       condition    || null,
+    tagged_size:     taggedSize   || null,
+    flaws:           flaws        || null,
+    weight_oz:       weightOz     ? parseFloat(weightOz) : null,
+    mannequin_type:  mannequinType || null,
+    measurements:    measurements.length > 0 ? measurements : null,
+    suggested_price: null,
+  })
 
   if (dbError) {
-    console.error('[save-export] DB insert failed — code:', dbError.code, '| message:', dbError.message, '| details:', dbError.details, '| hint:', dbError.hint)
+    console.error('[save-export] DB insert FAILED — code:', dbError.code, '| message:', dbError.message, '| details:', dbError.details, '| hint:', dbError.hint)
     return Response.json({
-      error: 'Failed to save record to database',
+      error:   'Failed to save record to database',
+      code:    dbError.code,
       details: dbError.message,
-      hint: dbError.hint || 'Make sure the exported_images table exists. Run supabase/migrations/001_exported_images.sql in the Supabase SQL editor.',
+      hint:    dbError.code === '42703'
+        ? `Column missing: ${dbError.message}. Run supabase/migrations/003_add_weight.sql and 004_add_mannequin_type.sql in the Supabase SQL Editor.`
+        : dbError.hint || 'Run supabase/migrations/001_exported_images.sql in the Supabase SQL Editor.',
     }, { status: 500 })
   }
 
   const recordId = record.id
-  console.log('[save-export] DB insert succeeded, record id:', recordId)
+  console.log('[save-export] DB insert succeeded — record id:', recordId)
 
-  // ── 6. AI suggested price (text-only, after save — timeout safe) ──────────
+  // ── 9. AI suggested price ─────────────────────────────────────────────────
   let suggestedPrice = null
   const apiKey = process.env.ANTHROPIC_API_KEY
 
@@ -207,10 +224,10 @@ Respond with ONLY a number (e.g. 28.00). No currency symbol, no explanation.`,
       console.error('[save-export] Anthropic price call failed:', e.message)
     }
   } else {
-    console.log('[save-export] skipping Anthropic — ANTHROPIC_API_KEY not set or is a placeholder')
+    console.log('[save-export] skipping Anthropic — ANTHROPIC_API_KEY not set or placeholder')
   }
 
-  // ── 7. Update record with suggested price ─────────────────────────────────
+  // ── 10. Update record with suggested price ────────────────────────────────
   if (suggestedPrice !== null) {
     const { error: updateError } = await supabase
       .from('exported_images')
