@@ -29,6 +29,7 @@ export async function getEmailFromRequest(request) {
 export function getSupabase() {
   // Support both SUPABASE_URL and NEXT_PUBLIC_SUPABASE_URL (either may be set in Vercel)
   const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL
+  // Prefer service role key (bypasses RLS). Fall back to anon key.
   const key =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.SUPABASE_ANON_KEY ||
@@ -36,11 +37,19 @@ export function getSupabase() {
 
   if (!url || !key) {
     console.error(
-      '[getSupabase] Missing Supabase credentials. Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_ANON_KEY) in your environment.'
+      '[getSupabase] Missing credentials. Need SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY (or SUPABASE_ANON_KEY) in Vercel env vars.'
     )
     throw new Error('Supabase credentials not configured')
   }
 
-  console.log('[getSupabase] connecting to:', url.slice(0, 40))
-  return createClient(url, key)
+  const keyType = process.env.SUPABASE_SERVICE_ROLE_KEY ? 'service_role' : 'anon'
+  console.log(`[getSupabase] url=${url.slice(0, 40)} key=${keyType}`)
+  return createClient(url, key, {
+    auth: {
+      // Disable auto-refresh and session persistence for server-side usage
+      autoRefreshToken: false,
+      persistSession: false,
+      detectSessionInUrl: false,
+    },
+  })
 }

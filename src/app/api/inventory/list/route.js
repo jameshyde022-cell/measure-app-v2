@@ -4,7 +4,13 @@ export async function GET(request) {
   const email = await getEmailFromRequest(request)
   if (!email) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const supabase = getSupabase()
+  let supabase
+  try {
+    supabase = getSupabase()
+  } catch (e) {
+    return Response.json({ error: 'Database configuration error', details: e.message }, { status: 500 })
+  }
+
   const { data, error } = await supabase
     .from('exported_images')
     .select('*')

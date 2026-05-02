@@ -13,7 +13,13 @@ export async function PATCH(request, { params }) {
   if (sold_price !== undefined) updates.sold_price = sold_price !== '' && sold_price !== null ? Number(sold_price) : null
   if (sold_date !== undefined) updates.sold_date = sold_date || null
 
-  const supabase = getSupabase()
+  let supabase
+  try {
+    supabase = getSupabase()
+  } catch (e) {
+    return Response.json({ error: 'Database configuration error', details: e.message }, { status: 500 })
+  }
+
   const { data, error } = await supabase
     .from('exported_images')
     .update(updates)

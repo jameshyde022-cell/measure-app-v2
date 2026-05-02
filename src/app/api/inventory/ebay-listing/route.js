@@ -1,6 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk'
 import { getEmailFromRequest } from '../../../../lib/auth'
 
+function isRealAnthropicKey(key) {
+  return typeof key === 'string' && key.startsWith('sk-ant-') && key.length > 20
+}
+
 const CONDITION_IDS = {
   'Excellent / Like new': { id: 4000, label: 'Pre-Owned - Like New' },
   'Very good': { id: 5000, label: 'Pre-Owned - Good' },
@@ -61,8 +65,8 @@ export async function POST(request) {
   const email = await getEmailFromRequest(request)
   if (!email) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
-  if (!process.env.ANTHROPIC_API_KEY) {
-    return Response.json({ error: 'ANTHROPIC_API_KEY not configured' }, { status: 503 })
+  if (!isRealAnthropicKey(process.env.ANTHROPIC_API_KEY)) {
+    return Response.json({ error: 'ANTHROPIC_API_KEY not configured — add a real sk-ant-... key to Vercel env vars' }, { status: 503 })
   }
 
   let body
