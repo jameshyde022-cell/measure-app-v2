@@ -60,6 +60,8 @@ function buildCsv(listing, brand, taggedSize) {
     'ReturnWithin',
     'RefundOption',
     'ShippingCostPaidBy',
+    'Location',
+    'PostalCode',
   ].join(',')
 
   const row = [
@@ -96,6 +98,8 @@ function buildCsv(listing, brand, taggedSize) {
     'Days_30',
     'MoneyBack',
     'Buyer',
+    'Honolulu, HI',
+    '96822',
   ].join(',')
 
   return [headers, row].join('\n')
