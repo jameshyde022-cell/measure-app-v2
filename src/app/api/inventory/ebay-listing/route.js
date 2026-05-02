@@ -12,50 +12,90 @@ const CONDITION_IDS = {
   'Fair / Worn': { id: 6000, label: 'Pre-Owned - Acceptable' },
 }
 
-function buildCsv(listing, brand, taggedSize, imageUrl) {
+function csvCell(value) {
+  if (value === null || value === undefined || value === '') return ''
+  const str = String(value)
+  if (!/[",\n\r]/.test(str)) return str
+  return '"' + str.replace(/"/g, '""') + '"'
+}
+
+function buildCsv(listing, brand, taggedSize) {
   const conditionEntry = CONDITION_IDS[listing.condition] || { id: 5000, label: listing.condition || 'Pre-Owned - Good' }
-  const desc = (listing.description || '').replace(/"/g, '""').replace(/\n/g, ' ')
-  const title = (listing.title || '').replace(/"/g, '""')
-  const keywords = (listing.keywords || []).join(', ')
+  const specs = listing.itemSpecifics || {}
+
+  // Description is an HTML field in Seller Hub — convert newlines to <br>
+  const descHtml = (listing.description || '').replace(/\n/g, '<br>')
 
   const headers = [
-    'Action(SiteID=US|Country=US|Currency=USD|Version=745|CC=UTF-8)',
-    '*Title',
-    '*Category',
-    '*ConditionID',
+    'Action(SiteID=US|Country=US|Currency=USD|Version=1193|CC=UTF-8)',
+    'Category',
+    'StoreCategory',
+    'Title',
+    'Subtitle',
+    'ConditionID',
     'ConditionDescription',
-    '*Format',
-    'Duration',
-    '*StartPrice',
-    'BuyItNowPrice',
-    '*Quantity',
+    'C:Brand',
+    'C:Size',
+    'C:Color',
+    'C:Style',
+    'C:Material',
+    'C:Era',
+    'C:Pattern',
+    'C:Occasion',
+    'C:Country of Manufacture',
     'Description',
-    'PicURL',
-    '*Location',
-    '*DispatchTimeMax',
-    'Brand',
-    'Size',
-    'Keywords',
+    'Format',
+    'Duration',
+    'StartPrice',
+    'BuyItNowPrice',
+    'Quantity',
+    'PaymentInstructions',
+    'ShippingType',
+    'ShippingService-1:Option',
+    'ShippingService-1:Cost',
+    'ShippingService-2:Option',
+    'ShippingService-2:Cost',
+    'DispatchTimeMax',
+    'ReturnsAcceptedOption',
+    'ReturnWithin',
+    'RefundOption',
+    'ShippingCostPaidBy',
   ].join(',')
 
   const row = [
     'Add',
-    `"${title}"`,
-    listing.categoryId || '11554',
+    csvCell(listing.categoryId || '11554'),
+    '',
+    csvCell(listing.title || ''),
+    '',
     conditionEntry.id,
-    `"${conditionEntry.label}"`,
+    csvCell(conditionEntry.label),
+    csvCell(brand || ''),
+    csvCell(taggedSize || ''),
+    csvCell(specs.Color || ''),
+    csvCell(specs.Style || ''),
+    csvCell(specs.Material || ''),
+    '',
+    '',
+    '',
+    '',
+    csvCell(descHtml),
     'FixedPrice',
     'GTC',
     listing.price || '',
     '',
     '1',
-    `"${desc}"`,
-    imageUrl ? `"${imageUrl}"` : '',
-    '"United States"',
+    '',
+    'Flat',
+    'USPSFirstClass',
+    '0',
+    '',
+    '',
     '3',
-    `"${(brand || '').replace(/"/g, '""')}"`,
-    `"${(taggedSize || '').replace(/"/g, '""')}"`,
-    `"${keywords.replace(/"/g, '""')}"`,
+    'ReturnsAccepted',
+    'Days_30',
+    'MoneyBack',
+    'Buyer',
   ].join(',')
 
   return [headers, row].join('\n')
@@ -129,6 +169,6 @@ Return a JSON object with exactly this structure (no markdown, no code fences, p
     return Response.json({ error: 'Failed to generate listing', details: e.message }, { status: 500 })
   }
 
-  const csv = buildCsv(listing, brand, taggedSize, imageUrl)
+  const csv = buildCsv(listing, brand, taggedSize)
   return Response.json({ listing, csv })
 }
