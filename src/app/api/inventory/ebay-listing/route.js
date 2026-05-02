@@ -21,18 +21,28 @@ function csvCell(value) {
 }
 
 function shippingProfile(weightOz) {
-  if (weightOz === null || weightOz === undefined || weightOz === '') return ''
-  return Number(weightOz) <= 16
+  console.log('[ebay-listing] shippingProfile input:', weightOz, typeof weightOz)
+  // Always provide a valid fallback — empty ShippingProfileName fails validation
+  if (weightOz === null || weightOz === undefined || weightOz === '' || isNaN(Number(weightOz))) {
+    console.log('[ebay-listing] shippingProfile: no valid weight, using default')
+    return 'Calculated: USPSParcel , 2 business days'
+  }
+  const profile = Number(weightOz) <= 16
     ? 'Calculated: USPSParcel , 2 business days'
     : 'padded env'
+  console.log('[ebay-listing] shippingProfile selected:', profile)
+  return profile
 }
 
 function buildCsv(listing, brand, taggedSize, imageUrl, weightOz) {
   const conditionEntry = CONDITION_IDS[listing.condition] || { id: 3000, label: 'Pre-Owned - Good' }
   const specs = listing.itemSpecifics || {}
 
-  // Description is an HTML field — newlines become <br>, already HTML from prompt
+  // Description is an HTML field — newlines become <br>
   const descHtml = (listing.description || '').replace(/\n/g, '<br>')
+
+  // PostalCode: digits only, no hidden characters
+  const postalCode = '96822'.replace(/\D/g, '')
 
   const headers = [
     'Action(SiteID=US|Country=US|Currency=USD|Version=1193|CC=UTF-8)',
@@ -59,16 +69,15 @@ function buildCsv(listing, brand, taggedSize, imageUrl, weightOz) {
     'Quantity',
     'PicURL',
     'ShippingProfileName',
-    'ReturnProfileName',
-    'PaymentProfileName',
     'DispatchTimeMax',
+    'ReturnsAcceptedOption',
     'Location',
     'PostalCode',
   ].join(',')
 
   const row = [
     'Add',
-    csvCell(listing.categoryId || '182047'),
+    csvCell(listing.categoryId || '53159'),
     '',
     csvCell(listing.title || ''),
     '',
@@ -91,11 +100,10 @@ function buildCsv(listing, brand, taggedSize, imageUrl, weightOz) {
     '1',
     csvCell(imageUrl || ''),
     csvCell(shippingProfile(weightOz)),
-    'No Return Accepted',
-    'eBay Managed Payments',
     '3',
+    'ReturnsNotAccepted',
     'Honolulu, HI',
-    '96822',
+    postalCode,
   ].join(',')
 
   return [headers, row].join('\n')
@@ -113,6 +121,8 @@ export async function POST(request) {
   try { body = await request.json() } catch { return Response.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
   const { brand, clothingType, condition, taggedSize, flaws, measurements = [], suggestedPrice, imageUrl, weightOz } = body
+
+  console.log('[ebay-listing] received weightOz:', weightOz, '| type:', typeof weightOz)
 
   const measurementsText = measurements.length > 0
     ? measurements.map((m, i) => `${i + 1}. ${m.name}${m.value ? `: ${m.value}${m.unit}` : ''}`).join('\n')
@@ -153,8 +163,8 @@ Return a JSON object with exactly this structure (no markdown, no code fences, p
 {
   "title": "eBay listing title under 80 characters — keyword-rich, specific, no puffery",
   "description": "Full HTML description structured as described above",
-  "category": "Most specific eBay vintage clothing category name",
-  "categoryId": "eBay category ID — use 182047 for Women's Vintage, 165330 for Men's Vintage, or a more specific subcategory if appropriate",
+  "category": "Most specific eBay clothing category name",
+  "categoryId": "eBay leaf category ID — use 53159 for Women's Tops, 11554 for Women's Jeans, 57989 for Men's Jeans, 57990 for Men's Shirts, 63861 for Women's Dresses, 11484 for Women's Coats & Jackets. Must be a leaf category.",
   "price": "recommended listing price as a number",
   "condition": "Excellent / Like new OR Very good OR Good OR Fair / Worn — match the input condition exactly",
   "itemSpecifics": {
@@ -179,6 +189,7 @@ Return a JSON object with exactly this structure (no markdown, no code fences, p
     return Response.json({ error: 'Failed to generate listing', details: e.message }, { status: 500 })
   }
 
+  console.log('[ebay-listing] categoryId from AI:', listing?.categoryId)
   const csv = buildCsv(listing, brand, taggedSize, imageUrl, weightOz)
   return Response.json({ listing, csv })
 }
