@@ -35,7 +35,6 @@ function resolveCategoryId(mannequinType, clothingType) {
   const gender = mannequinType === 'male' ? 'men' : 'women'
   const map = CATEGORIES[gender]
   if (!clothingType) return map.default
-  // normalise: lowercase, strip spaces/hyphens, match first keyword found
   const norm = clothingType.toLowerCase().replace(/[-\s]/g, '')
   for (const [key, id] of Object.entries(map)) {
     if (key === 'default') continue
@@ -68,7 +67,7 @@ function buildCsv(listing, imageUrl, mannequinType, clothingType) {
     '#INFO Action and Category ID are required fields. 1) Set Action to Draft 2) Please find the category ID for your listings here: https://pages.ebay.com/sellerinformation/news/categorychanges.html,,,,,,,,,,',
     '"#INFO After you\'ve successfully uploaded your draft from the Seller Hub Reports tab, complete your drafts to active listings here: https://www.ebay.com/sh/lst/drafts",,,,,,,,,,',
     '#INFO,,,,,,,,,,',
-    'Action(SiteID=US|Country=US|Currency=USD|Version=1193|CC=UTF-8),Custom label (SKU),Category ID,Title,UPC,Price,Quantity,Item photo URL,Condition ID,Description,Format,C:Brand,C:Size,C:Type,C:Style,C:Color,C:Outer Shell Material,C:Department,C:Era,C:Pattern,C:Occasion',
+    'Action(SiteID=US|Country=US|Currency=USD|Version=1193|CC=UTF-8),Custom label (SKU),Category ID,Title,UPC,Price,Quantity,Item photo URL,Condition ID,Description,Format,C:Brand,C:Size,C:Color,C:Department,C:Type,C:Style,C:Sleeve Type,C:Material,C:Neckline,C:Sleeve Length,C:Accents,C:Pattern,C:Theme,C:Features,C:Fit',
     [
       'Draft',
       '',
@@ -83,14 +82,19 @@ function buildCsv(listing, imageUrl, mannequinType, clothingType) {
       'FixedPrice',
       csvCell(specs.Brand || ''),
       csvCell(specs.Size || ''),
-      csvCell(specs.Type || clothingType || ''),
-      csvCell(specs.Style || ''),
       csvCell(specs.Color || ''),
-      csvCell(specs.Material || ''),
       department,
-      csvCell(specs.Era || ''),
+      csvCell(specs.Type || ''),
+      csvCell(specs.Style || ''),
+      csvCell(specs.SleeveType || ''),
+      csvCell(specs.Material || ''),
+      csvCell(specs.Neckline || ''),
+      csvCell(specs.SleeveLength || ''),
+      csvCell(specs.Accents || ''),
       csvCell(specs.Pattern || ''),
-      csvCell(specs.Occasion || ''),
+      csvCell(specs.Theme || ''),
+      csvCell(specs.Features || ''),
+      csvCell(specs.Fit || ''),
     ].join(','),
   ]
 
@@ -156,13 +160,18 @@ Return a JSON object with exactly this structure (no markdown, no code fences, p
   "itemSpecifics": {
     "Brand": "${brand || ''}",
     "Size": "${taggedSize || ''}",
-    "Type": "${clothingType || ''}",
-    "Color": "infer from context or leave blank",
-    "Material": "infer from context or leave blank",
-    "Style": "infer from context or leave blank",
-    "Era": "infer decade/era if discernible (e.g. 90s, Y2K, 80s) or leave blank",
-    "Pattern": "infer if applicable (e.g. Solid, Floral, Striped, Graphic Print) or leave blank",
-    "Occasion": "infer if applicable (e.g. Casual, Formal, Party) or leave blank"
+    "Color": "infer primary color from garment details",
+    "Type": "must be exactly one of: Blouse, Button-Up, Polo, Tank, T-Shirt — pick closest match",
+    "Style": "infer style (e.g. Vintage, Casual, Formal, Bohemian, Streetwear)",
+    "SleeveType": "infer sleeve construction (e.g. Set-In, Raglan, Dolman, Cap, Puff)",
+    "Material": "infer primary fabric (e.g. Cotton, Silk, Polyester, Linen, Wool)",
+    "Neckline": "infer neckline (e.g. Crew Neck, V-Neck, Scoop Neck, Turtleneck, Collared, Halter)",
+    "SleeveLength": "must be exactly one of: Sleeveless, Short Sleeve, 3/4 Sleeve, Long Sleeve",
+    "Accents": "infer any decorative details (e.g. Embroidered, Sequined, Beaded, Lace Trim) or leave blank",
+    "Pattern": "must be exactly one of: Animal Print, Argyle/Diamond, Camouflage, Check, Colorblock, Fair Isle, Floral, Geometric, Herringbone, Paisley, Plaid, Polka Dot, Solid, Striped",
+    "Theme": "infer theme if applicable (e.g. Floral, Abstract, Graphic, Logo, Nature) or leave blank",
+    "Features": "infer notable construction features (e.g. Button Front, Zip Closure, Pockets, Tie Waist) or leave blank",
+    "Fit": "infer fit (e.g. Regular, Slim, Oversized, Cropped, Relaxed)"
   },
   "keywords": ["array", "of", "10", "targeted", "collector-level", "search", "keywords", "for", "this", "specific", "item"]
 }`,
