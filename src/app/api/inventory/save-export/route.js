@@ -1,4 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk'
+import sharp from 'sharp'
 import { getEmailFromRequest, getSupabase } from '../../../../lib/auth'
 
 function isRealAnthropicKey(key) {
@@ -64,7 +65,19 @@ export async function POST(request) {
     return Response.json({ error: 'Image buffer is empty' }, { status: 400 })
   }
 
-  // ── 3. Supabase client ────────────────────────────────────────────────────
+  // ── 3. Compress image — resize to max 1200px, JPEG 80% ───────────────────
+  let uploadBuffer
+  try {
+    uploadBuffer = await sharp(imageBuffer)
+      .resize(1200, 1200, { fit: 'inside', withoutEnlargement: true })
+      .jpeg({ quality: 80 })
+      .toBuffer()
+    console.log('[save-export] compression — before:', imageBuffer.length, 'bytes → after:', uploadBuffer.length, 'bytes')
+  } catch (e) {
+    console.error('[save-export] sharp compression failed:', e.message, '— falling back to original')
+    uploadBuffer = imageBuffer
+  }
+
   let supabase
   try {
     supabase = getSupabase()
@@ -92,15 +105,14 @@ export async function POST(request) {
   // ── 5. Upload to Supabase Storage ─────────────────────────────────────────
   // Sanitize email: lowercase alphanumeric and underscores only, collapse runs
   const safeEmail = email.toLowerCase().replace(/[^a-z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '')
-  const fileName  = `${safeEmail}/${Date.now()}.png`
-  console.log('[save-export] upload path:', fileName, '| bytes:', imageBuffer.length)
+  const fileName  = `${safeEmail}/${Date.now()}.jpg`
+  console.log('[save-export] upload path:', fileName, '| bytes:', uploadBuffer.length)
 
-  // Pass as Uint8Array — more reliable across Supabase JS versions than Buffer
-  const uploadBytes = new Uint8Array(imageBuffer)
+  const uploadBytes = new Uint8Array(uploadBuffer)
 
   const { data: uploadData, error: uploadError } = await supabase.storage
     .from('exported-images')
-    .upload(fileName, uploadBytes, { contentType: 'image/png', upsert: true })
+    .upload(fileName, uploadBytes, { contentType: 'image/jpeg', upsert: true })
 
   if (uploadError) {
     console.error('[save-export] storage upload FAILED:', JSON.stringify({
