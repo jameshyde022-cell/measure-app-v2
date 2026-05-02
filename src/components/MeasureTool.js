@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 
 const PRESET_MEASUREMENTS = [
   'Waist','Outseam','Inseam','Rise','Thigh','Knee','Leg Opening',
-  'Chest','Shoulder','Sleeve','Back Length','Hem','Bust','Hip','Armhole','Neck','Cuff',
+  'Chest','Shoulder','Sleeve','Length','Hem','Bust','Hip','Armhole','Neck','Cuff',
 ];
 
 const LINE_COLORS = [
