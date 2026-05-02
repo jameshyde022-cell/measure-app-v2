@@ -5,14 +5,6 @@ function isRealAnthropicKey(key) {
   return typeof key === 'string' && key.startsWith('sk-ant-') && key.length > 20
 }
 
-// eBay condition IDs updated Feb 2025 — three tiers for pre-owned apparel
-const CONDITION_IDS = {
-  'Excellent / Like new': { id: 2990, label: 'Pre-Owned - Excellent' },
-  'Very good':            { id: 3000, label: 'Pre-Owned - Good' },
-  'Good':                 { id: 3000, label: 'Pre-Owned - Good' },
-  'Fair / Worn':          { id: 6000, label: 'Pre-Owned - Fair' },
-}
-
 function csvCell(value) {
   if (value === null || value === undefined || value === '') return ''
   const str = String(value)
@@ -20,93 +12,33 @@ function csvCell(value) {
   return '"' + str.replace(/"/g, '""') + '"'
 }
 
-function shippingProfile(weightOz) {
-  console.log('[ebay-listing] shippingProfile input:', weightOz, typeof weightOz)
-  // Always provide a valid fallback — empty ShippingProfileName fails validation
-  if (weightOz === null || weightOz === undefined || weightOz === '' || isNaN(Number(weightOz))) {
-    console.log('[ebay-listing] shippingProfile: no valid weight, using default')
-    return 'Calculated: USPSParcel , 2 business days'
-  }
-  const profile = Number(weightOz) <= 16
-    ? 'Calculated: USPSParcel , 2 business days'
-    : 'padded env'
-  console.log('[ebay-listing] shippingProfile selected:', profile)
-  return profile
-}
-
-function buildCsv(listing, brand, taggedSize, imageUrl, weightOz) {
-  const conditionEntry = CONDITION_IDS[listing.condition] || { id: 3000, label: 'Pre-Owned - Good' }
-  const specs = listing.itemSpecifics || {}
-
+function buildCsv(listing, imageUrl) {
   // Description is an HTML field — newlines become <br>
   const descHtml = (listing.description || '').replace(/\n/g, '<br>')
 
-  // PostalCode: digits only, no hidden characters
-  const postalCode = '96822'.replace(/\D/g, '')
+  // eBay official draft template info lines — must appear exactly as-is
+  const lines = [
+    '#INFO,Version=0.0.2,Template= eBay-draft-listings-template_US,,,,,,,,',
+    '#INFO Action and Category ID are required fields. 1) Set Action to Draft 2) Please find the category ID for your listings here: https://pages.ebay.com/sellerinformation/news/categorychanges.html,,,,,,,,,,',
+    '"#INFO After you\'ve successfully uploaded your draft from the Seller Hub Reports tab, complete your drafts to active listings here: https://www.ebay.com/sh/lst/drafts",,,,,,,,,,',
+    '#INFO,,,,,,,,,,',
+    'Action(SiteID=US|Country=US|Currency=USD|Version=1193|CC=UTF-8),Custom label (SKU),Category ID,Title,UPC,Price,Quantity,Item photo URL,Condition ID,Description,Format',
+    [
+      'Draft',
+      '',
+      '57988',
+      csvCell(listing.title || ''),
+      '',
+      listing.price || '',
+      '1',
+      csvCell(imageUrl || ''),
+      '3000',
+      csvCell(descHtml),
+      'FixedPrice',
+    ].join(','),
+  ]
 
-  const headers = [
-    'Action(SiteID=US|Country=US|Currency=USD|Version=1193|CC=UTF-8)',
-    'Category',
-    'StoreCategory',
-    'Title',
-    'Subtitle',
-    'ConditionID',
-    'ConditionDescription',
-    'C:Brand',
-    'C:Size',
-    'C:Color',
-    'C:Style',
-    'C:Material',
-    'C:Era',
-    'C:Pattern',
-    'C:Occasion',
-    'C:Country of Manufacture',
-    'Description',
-    'Format',
-    'Duration',
-    'StartPrice',
-    'BuyItNowPrice',
-    'Quantity',
-    'PicURL',
-    'ShippingProfileName',
-    'DispatchTimeMax',
-    'ReturnsAcceptedOption',
-    'Location',
-    'PostalCode',
-  ].join(',')
-
-  const row = [
-    'Add',
-    csvCell(listing.categoryId || '53159'),
-    '',
-    csvCell(listing.title || ''),
-    '',
-    conditionEntry.id,
-    csvCell(conditionEntry.label),
-    csvCell(brand || ''),
-    csvCell(taggedSize || ''),
-    csvCell(specs.Color || ''),
-    csvCell(specs.Style || ''),
-    csvCell(specs.Material || ''),
-    '',
-    '',
-    '',
-    '',
-    csvCell(descHtml),
-    'FixedPrice',
-    'GTC',
-    listing.price || '',
-    '',
-    '1',
-    csvCell(imageUrl || ''),
-    csvCell(shippingProfile(weightOz)),
-    '3',
-    'ReturnsNotAccepted',
-    'Honolulu, HI',
-    postalCode,
-  ].join(',')
-
-  return [headers, row].join('\n')
+  return lines.join('\n')
 }
 
 export async function POST(request) {
@@ -120,9 +52,7 @@ export async function POST(request) {
   let body
   try { body = await request.json() } catch { return Response.json({ error: 'Invalid JSON' }, { status: 400 }) }
 
-  const { brand, clothingType, condition, taggedSize, flaws, measurements = [], suggestedPrice, imageUrl, weightOz } = body
-
-  console.log('[ebay-listing] received weightOz:', weightOz, '| type:', typeof weightOz)
+  const { brand, clothingType, condition, taggedSize, flaws, measurements = [], suggestedPrice, imageUrl } = body
 
   const measurementsText = measurements.length > 0
     ? measurements.map((m, i) => `${i + 1}. ${m.name}${m.value ? `: ${m.value}${m.unit}` : ''}`).join('\n')
@@ -163,8 +93,6 @@ Return a JSON object with exactly this structure (no markdown, no code fences, p
 {
   "title": "eBay listing title under 80 characters — keyword-rich, specific, no puffery",
   "description": "Full HTML description structured as described above",
-  "category": "Most specific eBay clothing category name",
-  "categoryId": "eBay leaf category ID — use 53159 for Women's Tops, 11554 for Women's Jeans, 57989 for Men's Jeans, 57990 for Men's Shirts, 63861 for Women's Dresses, 11484 for Women's Coats & Jackets. Must be a leaf category.",
   "price": "recommended listing price as a number",
   "condition": "Excellent / Like new OR Very good OR Good OR Fair / Worn — match the input condition exactly",
   "itemSpecifics": {
@@ -189,7 +117,6 @@ Return a JSON object with exactly this structure (no markdown, no code fences, p
     return Response.json({ error: 'Failed to generate listing', details: e.message }, { status: 500 })
   }
 
-  console.log('[ebay-listing] categoryId from AI:', listing?.categoryId)
-  const csv = buildCsv(listing, brand, taggedSize, imageUrl, weightOz)
+  const csv = buildCsv(listing, imageUrl)
   return Response.json({ listing, csv })
 }
