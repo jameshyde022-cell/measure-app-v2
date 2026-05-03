@@ -313,16 +313,27 @@ export async function POST(req) {
           }
         );
 
+        const rawText = await response.text();
+        console.log(`[ghost-mannequin] model=${model} status=${response.status} raw_response_length=${rawText.length}`)
+        console.log(`[ghost-mannequin] raw_response=${rawText.slice(0, 2000)}`)
+
         if (!response.ok) {
-          const err = await response.json().catch(() => ({}));
-          lastError = err?.error?.message || 'Model failed';
-          console.error(`Model ${model} failed:`, lastError);
+          lastError = rawText.slice(0, 500);
+          console.error(`[ghost-mannequin] model=${model} NOT OK:`, lastError);
           continue;
         }
 
-        const data = await response.json();
+        let data
+        try { data = JSON.parse(rawText) } catch (e) {
+          lastError = 'JSON parse failed: ' + e.message
+          console.error(`[ghost-mannequin] JSON parse error:`, e.message, 'raw:', rawText.slice(0, 500))
+          continue
+        }
+
+        console.log(`[ghost-mannequin] candidates count:`, data?.candidates?.length)
         const parts = data?.candidates?.[0]?.content?.parts;
-        // Gemini REST API returns inline_data (snake_case) in responses
+        console.log(`[ghost-mannequin] parts count:`, parts?.length, 'part keys:', parts?.map(p => Object.keys(p).join(',')).join(' | '))
+
         const imagePart = parts?.find(p =>
           p.inline_data?.mime_type?.startsWith('image/') ||
           p.inlineData?.mimeType?.startsWith('image/')
@@ -330,7 +341,7 @@ export async function POST(req) {
 
         if (!imagePart) {
           lastError = 'No image returned';
-          console.error(`Model ${model} returned no image. Parts:`, JSON.stringify(parts));
+          console.error(`[ghost-mannequin] model=${model} no image part. Full parts:`, JSON.stringify(parts));
           continue;
         }
 
