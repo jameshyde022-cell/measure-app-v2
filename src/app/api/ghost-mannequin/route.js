@@ -322,7 +322,11 @@ export async function POST(req) {
 
         const data = await response.json();
         const parts = data?.candidates?.[0]?.content?.parts;
-        const imagePart = parts?.find(p => p.inlineData?.mimeType?.startsWith('image/'));
+        // Gemini REST API returns inline_data (snake_case) in responses
+        const imagePart = parts?.find(p =>
+          p.inline_data?.mime_type?.startsWith('image/') ||
+          p.inlineData?.mimeType?.startsWith('image/')
+        );
 
         if (!imagePart) {
           lastError = 'No image returned';
@@ -330,11 +334,13 @@ export async function POST(req) {
           continue;
         }
 
-        const imageBuffer = Buffer.from(imagePart.inlineData.data, 'base64');
+        const blob = imagePart.inline_data || imagePart.inlineData;
+        const contentType = blob.mime_type || blob.mimeType;
+        const imageBuffer = Buffer.from(blob.data, 'base64');
         return new NextResponse(imageBuffer, {
           status: 200,
           headers: {
-            'Content-Type': imagePart.inlineData.mimeType,
+            'Content-Type': contentType,
             'Content-Length': imageBuffer.length.toString(),
           }
         });
