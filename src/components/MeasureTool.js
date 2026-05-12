@@ -17,26 +17,27 @@ const HIT_RADIUS = 22;
 const FREE_MAX_LINES = 4;
 const FREE_MAX_EXPORTS_PER_DAY = 3;
 
-function todayKey() {
-  return 'measure_exports_' + new Date().toISOString().slice(0,10);
+function todayKey(email) {
+  const date = new Date().toISOString().slice(0,10);
+  return email ? `measure_exports_${email}_${date}` : `measure_exports_${date}`;
 }
 
-function getExportCount() {
-  try { return parseInt(localStorage.getItem(todayKey())||'0',10); } catch(e) { return 0; }
+function getExportCount(email) {
+  try { return parseInt(localStorage.getItem(todayKey(email))||'0',10); } catch(e) { return 0; }
 }
 
-function incrementExportCount() {
-  try { localStorage.setItem(todayKey(), String(getExportCount()+1)); } catch(e) {}
+function incrementExportCount(email) {
+  try { localStorage.setItem(todayKey(email), String(getExportCount(email)+1)); } catch(e) {}
 }
 
-async function fetchProStatus() {
+async function fetchUserInfo() {
   try {
     const res = await fetch('/api/auth/me')
-    if (!res.ok) return false
+    if (!res.ok) return { pro: false, email: null }
     const data = await res.json()
-    return data.pro === true
+    return { pro: data.pro === true, email: data.email || null }
   } catch {
-    return false
+    return { pro: false, email: null }
   }
 }
 
@@ -140,6 +141,7 @@ export default function MeasureTool() {
   const [aspectRatio,setAspectRatio] = useState('original');
   const [ix,setIx]                   = useState({mode:'idle',p1:null,p2:null,color:LINE_COLORS[0],dragging:null});
   const [pro,setPro]                 = useState(false);
+  const [userEmail,setUserEmail]     = useState(null);
   const [exportCount,setExportCount] = useState(0);
   const [limitMsg,setLimitMsg]       = useState(null);
   const [gender,setGender]           = useState('female');
@@ -187,10 +189,13 @@ export default function MeasureTool() {
 
   const activeName = useCustom?(customName||'Measurement'):curName;
 
-  // Load pro status and export count on mount
+  // Load pro status, email, and export count on mount
   useEffect(()=>{
-    setExportCount(getExportCount());
-    fetchProStatus().then(setPro);
+    fetchUserInfo().then(({ pro, email }) => {
+      setPro(pro);
+      setUserEmail(email);
+      setExportCount(getExportCount(email));
+    });
   },[]);
 
   useEffect(()=>{
@@ -421,8 +426,8 @@ export default function MeasureTool() {
     el.width=ec.width; el.height=ec.height;
     el.getContext('2d').drawImage(ec,0,0);
     if(!pro){
-      incrementExportCount();
-      const newCount=getExportCount();
+      incrementExportCount(userEmail);
+      const newCount=getExportCount(userEmail);
       setExportCount(newCount);
     }
     setShowExport(true);
@@ -625,6 +630,12 @@ export default function MeasureTool() {
             style={{background:'none',border:'none',fontFamily:'monospace',fontSize:11,color:'#f0ebe0',cursor:'pointer',letterSpacing:'0.08em',padding:'2px 4px',textDecoration:'underline'}}
           >
             Inventory
+          </button>
+          <button
+            onClick={()=>window.location.href='/profile'}
+            style={{background:'none',border:'none',fontFamily:'monospace',fontSize:11,color:'#f0ebe0',cursor:'pointer',letterSpacing:'0.08em',padding:'2px 4px',textDecoration:'underline'}}
+          >
+            Profile
           </button>
           <button
             onClick={async()=>{await fetch('/api/auth/logout',{method:'POST'});window.location.href='/login';}}
