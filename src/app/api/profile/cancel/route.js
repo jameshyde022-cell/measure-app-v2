@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import Stripe from 'stripe'
 
 const SECRET = process.env.AUTH_SECRET ?? 'measure-dev-secret-replace-in-prod'
 
@@ -26,39 +27,30 @@ async function getEmailFromRequest(request) {
   }
 }
 
-export async function GET(request) {
+export async function POST(request) {
   const email = await getEmailFromRequest(request)
-  if (!email) {
-    return Response.json({ error: 'Unauthorized' }, { status: 401 })
-  }
+  if (!email) return Response.json({ error: 'Unauthorized' }, { status: 401 })
 
   const supabase = createClient(
     process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
   )
 
-  const { data } = await supabase
+  const { data: sub } = await supabase
     .from('subscribers')
-    .select('is_pro, pro_trial_expires_at, referral_code')
+    .select('stripe_subscription_id')
     .eq('email', email.toLowerCase())
     .maybeSingle()
 
-  let isPro = data?.is_pro === true
-
-  // Expire trial if past the deadline
-  if (isPro && data?.pro_trial_expires_at) {
-    if (new Date(data.pro_trial_expires_at) < new Date()) {
-      isPro = false
-      await supabase
-        .from('subscribers')
-        .update({ is_pro: false })
-        .eq('email', email.toLowerCase())
-    }
+  if (!sub?.stripe_subscription_id) {
+    return Response.json({ error: 'No active subscription found.' }, { status: 400 })
   }
 
-  return Response.json({
-    email,
-    pro: isPro,
-    referral_code: data?.referral_code || null,
+  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
+  await stripe.subscriptions.update(sub.stripe_subscription_id, {
+    cancel_at_period_end: true,
   })
+
+  console.log('[profile/cancel] Subscription set to cancel at period end for:', email)
+  return Response.json({ ok: true })
 }

@@ -84,6 +84,7 @@ function Nav() {
         <a href="#features" className={styles.navLink}>Features</a>
         <a href="#examples" className={styles.navLink}>Examples</a>
         <a href="#pricing" className={styles.navLink}>Pricing</a>
+        <a href="mailto:jameshyde022@gmail.com?subject=MEASURE%20Inquiry" className={styles.navLink}>Contact</a>
         <Link href="/app" className={styles.navCta}>Try Free</Link>
       </div>
     </nav>
