@@ -26,7 +26,7 @@ export async function POST(request) {
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://measure-app-hazel.vercel.app'
 
-  const { error } = await supabase.auth.signUp({
+  const { data: signUpData, error } = await supabase.auth.signUp({
     email: normalizedEmail,
     password,
     options: {
@@ -46,6 +46,21 @@ export async function POST(request) {
     return Response.json({ error: error.message }, { status: 400 })
   }
 
-  console.log('[auth/signup] Verification email sent to:', normalizedEmail)
+  // Auto-confirm email so users can log in immediately.
+  // Remove this block once a custom SMTP is configured in Supabase and
+  // the redirect URL is added to the Supabase Auth allowlist.
+  if (signUpData?.user?.id) {
+    const { error: confirmError } = await supabase.auth.admin.updateUserById(
+      signUpData.user.id,
+      { email_confirm: true }
+    )
+    if (confirmError) {
+      console.error('[auth/signup] Auto-confirm failed:', confirmError.message)
+    } else {
+      console.log('[auth/signup] Auto-confirmed email for:', normalizedEmail)
+    }
+  }
+
+  console.log('[auth/signup] Account created for:', normalizedEmail)
   return Response.json({ ok: true })
 }

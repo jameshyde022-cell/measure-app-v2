@@ -57,33 +57,12 @@ function SignupForm() {
         return
       }
 
-      setDone(true)
+      // Account created and auto-confirmed — go straight to login
+      window.location.href = '/login?signup=1'
     } catch {
       setError('Something went wrong. Please try again.')
       setLoading(false)
     }
-  }
-
-  if (done) {
-    return (
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ fontSize: 32, marginBottom: 16 }}>✉️</div>
-        <div style={{ fontFamily: "'Playfair Display', serif", fontSize: 20, fontWeight: 700, color: C.text, marginBottom: 12 }}>
-          Check your email
-        </div>
-        <p style={{ fontSize: 13, color: C.muted, lineHeight: 1.7, margin: '0 0 24px' }}>
-          We sent a verification link to <strong style={{ color: C.text }}>{email}</strong>.
-          Click the link to verify your account, then sign in.
-        </p>
-        <Link href="/login" style={{
-          display: 'inline-block', padding: '11px 28px', background: C.gold, borderRadius: 6,
-          fontFamily: "'Playfair Display', serif", fontSize: 14, fontWeight: 700,
-          color: '#0d0d0d', textDecoration: 'none', letterSpacing: '0.04em',
-        }}>
-          Go to Sign In →
-        </Link>
-      </div>
-    )
   }
 
   return (

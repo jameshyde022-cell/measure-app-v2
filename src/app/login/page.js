@@ -25,6 +25,7 @@ function LoginForm() {
   const searchParams = useSearchParams()
   const next = searchParams.get('next') || '/app'
   const verified = searchParams.get('verified') === '1'
+  const justSignedUp = searchParams.get('signup') === '1'
 
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -64,7 +65,12 @@ function LoginForm() {
 
   return (
     <>
-      {verified && (
+      {justSignedUp && (
+        <div style={{ fontSize: 12, color: C.success, padding: '10px 12px', background: C.successBg, border: `1px solid ${C.successBorder}`, borderRadius: 6, fontFamily: 'monospace', marginBottom: 16 }}>
+          ✓ Account created! Sign in below to get started.
+        </div>
+      )}
+      {verified && !justSignedUp && (
         <div style={{ fontSize: 12, color: C.success, padding: '10px 12px', background: C.successBg, border: `1px solid ${C.successBorder}`, borderRadius: 6, fontFamily: 'monospace', marginBottom: 16 }}>
           ✓ Email verified! Sign in below to access your account.
         </div>
