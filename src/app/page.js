@@ -352,11 +352,119 @@ function Features() {
 
 // ── EXAMPLES ──────────────────────────────────────────────────────────────────
 
+function BeforeAfterPair({ before, after, title, measurements }) {
+  return (
+    <div style={{
+      background: C.card,
+      border: `1px solid ${C.border}`,
+      borderRadius: 12,
+      overflow: 'hidden',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'stretch' }}>
+        <div style={{ flex: 1, position: 'relative' }}>
+          <div style={{
+            position: 'relative',
+            aspectRatio: '4/5',
+            background: '#0f0f0f',
+          }}>
+            <Image
+              src={before}
+              alt={`${title} before`}
+              fill
+              style={{ objectFit: 'contain' }}
+              sizes="(max-width: 768px) 50vw, 17vw"
+            />
+          </div>
+          <div style={{
+            position: 'absolute',
+            top: 10,
+            left: 10,
+            background: 'rgba(0,0,0,0.72)',
+            color: C.muted,
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            padding: '3px 8px',
+            borderRadius: 4,
+          }}>
+            Before
+          </div>
+        </div>
+
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '0 6px',
+          color: C.gold,
+          fontSize: 16,
+          flexShrink: 0,
+        }}>
+          →
+        </div>
+
+        <div style={{ flex: 1, position: 'relative' }}>
+          <div style={{
+            position: 'relative',
+            aspectRatio: '4/5',
+            background: '#111111',
+          }}>
+            <Image
+              src={after}
+              alt={`${title} after: ${measurements}`}
+              fill
+              style={{ objectFit: 'contain' }}
+              sizes="(max-width: 768px) 50vw, 17vw"
+            />
+          </div>
+          <div style={{
+            position: 'absolute',
+            top: 10,
+            left: 10,
+            background: 'rgba(232,184,75,0.18)',
+            color: C.gold,
+            fontSize: 10,
+            fontWeight: 700,
+            letterSpacing: '0.12em',
+            textTransform: 'uppercase',
+            padding: '3px 8px',
+            borderRadius: 4,
+            border: '1px solid rgba(232,184,75,0.25)',
+          }}>
+            After
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: '16px 20px', borderTop: `1px solid ${C.border}` }}>
+        <div style={{ fontWeight: 700, color: C.text, marginBottom: 4, fontSize: 14 }}>{title}</div>
+        <div style={{ fontSize: 12, color: C.gold, letterSpacing: '0.02em' }}>{measurements}</div>
+      </div>
+    </div>
+  )
+}
+
 function Examples() {
-  const examples = [
-    { src: '/examples/pants.png', title: 'Pants', measurements: 'Waist · Rise · Inseam · Hip' },
-    { src: '/examples/shirt.png', title: 'Top', measurements: 'Shoulder · Chest · Sleeve · Length' },
-    { src: '/examples/jacket.png', title: 'Jacket', measurements: 'Shoulder · Chest · Length · Sleeve' },
+  const pairs = [
+    {
+      before: '/before.jpg',
+      after: '/examples/pants.png',
+      title: 'Pants',
+      measurements: 'Waist · Rise · Inseam · Hip',
+    },
+    {
+      before: '/before.jpg',
+      after: '/examples/shirt.png',
+      title: 'Top',
+      measurements: 'Shoulder · Chest · Sleeve · Length',
+    },
+    {
+      before: '/before.jpg',
+      after: '/examples/jacket.png',
+      title: 'Jacket',
+      measurements: 'Shoulder · Chest · Length · Sleeve',
+    },
   ]
 
   return (
@@ -364,32 +472,8 @@ function Examples() {
       <Tag>Examples</Tag>
       <Heading>Show buyers the details that matter.</Heading>
       <div className={styles.threeGrid} style={{ marginTop: 48 }}>
-        {examples.map((e, i) => (
-          <div key={i} style={{
-            background: C.card,
-            border: `1px solid ${C.border}`,
-            borderRadius: 12,
-            overflow: 'hidden',
-          }}>
-            <div style={{
-              position: 'relative',
-              aspectRatio: '4/5',
-              borderBottom: `1px solid ${C.border}`,
-              background: '#111111',
-            }}>
-              <Image
-                src={e.src}
-                alt={`${e.title}: ${e.measurements}`}
-                fill
-                style={{ objectFit: 'contain' }}
-                sizes="(max-width: 768px) 100vw, 33vw"
-              />
-            </div>
-            <div style={{ padding: 20 }}>
-              <div style={{ fontWeight: 700, color: C.text, marginBottom: 6 }}>{e.title}</div>
-              <div style={{ fontSize: 13, color: C.gold, letterSpacing: '0.02em' }}>{e.measurements}</div>
-            </div>
-          </div>
+        {pairs.map((p, i) => (
+          <BeforeAfterPair key={i} {...p} />
         ))}
       </div>
     </Section>
