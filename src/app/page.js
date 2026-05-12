@@ -1,5 +1,7 @@
 import Link from 'next/link'
 import Image from 'next/image'
+import fs from 'fs'
+import path from 'path'
 import styles from './landing.module.css'
 
 const C = {
@@ -352,131 +354,163 @@ function Features() {
 
 // ── EXAMPLES ──────────────────────────────────────────────────────────────────
 
-function BeforeAfterPair({ before, after, title, measurements }) {
+const LABEL_BASE = {
+  position: 'absolute',
+  top: 12,
+  left: 12,
+  fontSize: 13,
+  fontWeight: 800,
+  letterSpacing: '0.14em',
+  textTransform: 'uppercase',
+  padding: '5px 12px',
+  borderRadius: 5,
+  zIndex: 2,
+  lineHeight: 1,
+}
+
+function BeforeAfterPair({ before, after, beforeExt = 'jpg' }) {
   return (
     <div style={{
       background: C.card,
       border: `1px solid ${C.border}`,
       borderRadius: 12,
       overflow: 'hidden',
+      display: 'flex',
+      alignItems: 'stretch',
     }}>
-      <div style={{ display: 'flex', alignItems: 'stretch' }}>
-        <div style={{ flex: 1, position: 'relative' }}>
-          <div style={{
-            position: 'relative',
-            aspectRatio: '4/5',
-            background: '#0f0f0f',
-          }}>
-            <Image
-              src={before}
-              alt={`${title} before`}
-              fill
-              style={{ objectFit: 'contain' }}
-              sizes="(max-width: 768px) 50vw, 17vw"
-            />
-          </div>
-          <div style={{
-            position: 'absolute',
-            top: 10,
-            left: 10,
-            background: 'rgba(0,0,0,0.72)',
-            color: C.muted,
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            padding: '3px 8px',
-            borderRadius: 4,
-          }}>
-            Before
-          </div>
+      <div style={{ flex: 1, position: 'relative' }}>
+        <div style={{ position: 'relative', aspectRatio: '3/4', background: '#0f0f0f' }}>
+          <Image
+            src={before}
+            alt="Before"
+            fill
+            style={{ objectFit: 'cover' }}
+            sizes="(max-width: 768px) 50vw, 17vw"
+          />
         </div>
-
         <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: '0 6px',
-          color: C.gold,
-          fontSize: 16,
-          flexShrink: 0,
+          ...LABEL_BASE,
+          background: 'rgba(0,0,0,0.78)',
+          color: '#ffffff',
+          border: '1px solid rgba(255,255,255,0.18)',
         }}>
-          →
-        </div>
-
-        <div style={{ flex: 1, position: 'relative' }}>
-          <div style={{
-            position: 'relative',
-            aspectRatio: '4/5',
-            background: '#111111',
-          }}>
-            <Image
-              src={after}
-              alt={`${title} after: ${measurements}`}
-              fill
-              style={{ objectFit: 'contain' }}
-              sizes="(max-width: 768px) 50vw, 17vw"
-            />
-          </div>
-          <div style={{
-            position: 'absolute',
-            top: 10,
-            left: 10,
-            background: 'rgba(232,184,75,0.18)',
-            color: C.gold,
-            fontSize: 10,
-            fontWeight: 700,
-            letterSpacing: '0.12em',
-            textTransform: 'uppercase',
-            padding: '3px 8px',
-            borderRadius: 4,
-            border: '1px solid rgba(232,184,75,0.25)',
-          }}>
-            After
-          </div>
+          Before
         </div>
       </div>
 
-      <div style={{ padding: '16px 20px', borderTop: `1px solid ${C.border}` }}>
-        <div style={{ fontWeight: 700, color: C.text, marginBottom: 4, fontSize: 14 }}>{title}</div>
-        <div style={{ fontSize: 12, color: C.gold, letterSpacing: '0.02em' }}>{measurements}</div>
+      <div style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '0 8px',
+        color: C.gold,
+        fontSize: 20,
+        fontWeight: 700,
+        flexShrink: 0,
+      }}>
+        →
+      </div>
+
+      <div style={{ flex: 1, position: 'relative' }}>
+        <div style={{ position: 'relative', aspectRatio: '3/4', background: '#111111' }}>
+          <Image
+            src={after}
+            alt="After"
+            fill
+            style={{ objectFit: 'cover' }}
+            sizes="(max-width: 768px) 50vw, 17vw"
+          />
+        </div>
+        <div style={{
+          ...LABEL_BASE,
+          background: 'rgba(232,184,75,0.22)',
+          color: C.gold,
+          border: '1px solid rgba(232,184,75,0.45)',
+        }}>
+          After
+        </div>
       </div>
     </div>
   )
 }
 
-function Examples() {
-  const pairs = [
-    {
-      before: '/before.jpg',
-      after: '/examples/pants.png',
-      title: 'Pants',
-      measurements: 'Waist · Rise · Inseam · Hip',
-    },
-    {
-      before: '/before.jpg',
-      after: '/examples/shirt.png',
-      title: 'Top',
-      measurements: 'Shoulder · Chest · Sleeve · Length',
-    },
-    {
-      before: '/before.jpg',
-      after: '/examples/jacket.png',
-      title: 'Jacket',
-      measurements: 'Shoulder · Chest · Length · Sleeve',
-    },
-  ]
+const GALLERY_COUNT = 20
+
+function Gallery() {
+  const galleryDir = path.join(process.cwd(), 'public', 'gallery')
+  const existing = new Set(
+    fs.existsSync(galleryDir) ? fs.readdirSync(galleryDir) : []
+  )
+
+  const slots = Array.from({ length: GALLERY_COUNT }, (_, i) => {
+    const filename = `gallery-${i + 1}.jpg`
+    return { src: `/gallery/${filename}`, exists: existing.has(filename) }
+  })
+
+  const filled = slots.filter(s => s.exists)
+  if (filled.length === 0) return null
 
   return (
-    <Section id="examples">
-      <Tag>Examples</Tag>
-      <Heading>Show buyers the details that matter.</Heading>
-      <div className={styles.threeGrid} style={{ marginTop: 48 }}>
-        {pairs.map((p, i) => (
-          <BeforeAfterPair key={i} {...p} />
+    <Section bg={C.surface}>
+      <Heading center>See what MEASURE creates</Heading>
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))',
+        gap: 12,
+        marginTop: 40,
+      }}>
+        {filled.map((slot, i) => (
+          <div key={i} style={{
+            position: 'relative',
+            aspectRatio: '3/4',
+            borderRadius: 10,
+            overflow: 'hidden',
+            background: C.card,
+            border: `1px solid ${C.border}`,
+          }}>
+            <Image
+              src={slot.src}
+              alt={`Gallery image ${i + 1}`}
+              fill
+              style={{ objectFit: 'cover' }}
+              sizes="(max-width: 768px) 50vw, 200px"
+            />
+          </div>
         ))}
       </div>
     </Section>
+  )
+}
+
+function Examples() {
+  const pairs = [
+    { before: '/examples/before-1.jpg', after: '/examples/after-1.png' },
+    { before: '/examples/before-2.jpg', after: '/examples/after-2.png' },
+    { before: '/examples/before-3.jpg', after: '/examples/after-3.png' },
+  ]
+
+  return (
+    <>
+      <Section id="examples">
+        <p style={{
+          fontSize: 'clamp(18px, 3vw, 26px)',
+          color: C.text,
+          lineHeight: 1.55,
+          maxWidth: 760,
+          fontFamily: "'Playfair Display', serif",
+          fontWeight: 600,
+          margin: 0,
+        }}>
+          Let MEASURE turn your raw photo into a beautiful, professional presentation that sets your listings apart.
+        </p>
+        <div className={styles.threeGrid} style={{ marginTop: 48 }}>
+          {pairs.map((p, i) => (
+            <BeforeAfterPair key={i} {...p} />
+          ))}
+        </div>
+      </Section>
+      <Gallery />
+    </>
   )
 }
 
