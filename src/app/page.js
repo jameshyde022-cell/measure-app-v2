@@ -412,12 +412,19 @@ function BeforeAfterPair({ before, after, beforeExt = 'jpg' }) {
       </div>
 
       <div style={{ flex: 1, position: 'relative' }}>
-        <div style={{ position: 'relative', aspectRatio: '3/4', background: '#111111' }}>
+        <div style={{
+          position: 'relative',
+          aspectRatio: '3/4',
+          background: '#111111',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}>
           <Image
             src={after}
             alt="After"
             fill
-            style={{ objectFit: 'cover' }}
+            style={{ objectFit: 'contain' }}
             sizes="(max-width: 768px) 50vw, 17vw"
           />
         </div>
@@ -444,11 +451,8 @@ function Gallery() {
 
   const slots = Array.from({ length: GALLERY_COUNT }, (_, i) => {
     const filename = `gallery-${i + 1}.jpg`
-    return { src: `/gallery/${filename}`, exists: existing.has(filename) }
+    return { src: `/gallery/${filename}`, exists: existing.has(filename), n: i + 1 }
   })
-
-  const filled = slots.filter(s => s.exists)
-  if (filled.length === 0) return null
 
   return (
     <Section bg={C.surface}>
@@ -459,22 +463,38 @@ function Gallery() {
         gap: 12,
         marginTop: 40,
       }}>
-        {filled.map((slot, i) => (
-          <div key={i} style={{
+        {slots.map((slot) => (
+          <div key={slot.n} style={{
             position: 'relative',
             aspectRatio: '3/4',
             borderRadius: 10,
             overflow: 'hidden',
             background: C.card,
             border: `1px solid ${C.border}`,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}>
-            <Image
-              src={slot.src}
-              alt={`Gallery image ${i + 1}`}
-              fill
-              style={{ objectFit: 'cover' }}
-              sizes="(max-width: 768px) 50vw, 200px"
-            />
+            {slot.exists ? (
+              <Image
+                src={slot.src}
+                alt={`Gallery image ${slot.n}`}
+                fill
+                style={{ objectFit: 'cover' }}
+                sizes="(max-width: 768px) 50vw, 200px"
+              />
+            ) : (
+              <div style={{
+                fontSize: 11,
+                color: C.dim,
+                fontWeight: 600,
+                letterSpacing: '0.08em',
+                textTransform: 'uppercase',
+                userSelect: 'none',
+              }}>
+                {slot.n}
+              </div>
+            )}
           </div>
         ))}
       </div>
