@@ -1,53 +1,43 @@
 'use client'
 
 import { useEffect, useState } from 'react'
-import { createClient } from '@supabase/supabase-js'
 
 export default function AuthCallback() {
   const [status, setStatus] = useState('Completing sign in…')
 
   useEffect(() => {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      setStatus('Configuration error. Please try again.')
-      return
-    }
-
-    const supabase = createClient(supabaseUrl, supabaseAnonKey)
-
     async function handleCallback() {
       try {
-        // Exchange the code in the URL for a session
-        const { data, error } = await supabase.auth.exchangeCodeForSession(
-          window.location.href
-        )
+        const params = new URLSearchParams(window.location.search)
+        const code = params.get('code')
+        const errorParam = params.get('error')
+        const errorDesc = params.get('error_description')
 
-        if (error || !data?.session?.user?.email) {
-          console.error('[auth/callback] Exchange failed:', error?.message)
-          setStatus('Sign in failed. Redirecting…')
-          setTimeout(() => { window.location.href = '/login' }, 2000)
+        if (errorParam) {
+          console.error('[auth/callback] OAuth provider error:', errorParam, errorDesc)
+          window.location.href = `/login?error=${encodeURIComponent(errorDesc || errorParam)}`
           return
         }
 
-        const email = data.session.user.email
+        if (!code) {
+          console.error('[auth/callback] No code in URL. Params:', window.location.search)
+          setStatus('Sign in failed — no auth code received. Redirecting…')
+          setTimeout(() => { window.location.href = '/login' }, 2500)
+          return
+        }
 
-        // Issue a measure_session cookie via our API
         const res = await fetch('/api/auth/oauth-callback', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email,
-            accessToken: data.session.access_token,
-          }),
+          body: JSON.stringify({ code }),
         })
 
+        const data = await res.json().catch(() => ({}))
+
         if (!res.ok) {
-          const d = await res.json().catch(() => ({}))
-          console.error('[auth/callback] oauth-callback API error:', d.error)
-          setStatus('Sign in failed. Redirecting…')
-          setTimeout(() => { window.location.href = '/login' }, 2000)
+          console.error('[auth/callback] oauth-callback API error:', res.status, data.error)
+          setStatus(`Sign in failed: ${data.error || 'unknown error'}. Redirecting…`)
+          setTimeout(() => { window.location.href = '/login' }, 2500)
           return
         }
 
@@ -55,7 +45,7 @@ export default function AuthCallback() {
       } catch (err) {
         console.error('[auth/callback] Unexpected error:', err)
         setStatus('Something went wrong. Redirecting…')
-        setTimeout(() => { window.location.href = '/login' }, 2000)
+        setTimeout(() => { window.location.href = '/login' }, 2500)
       }
     }
 
