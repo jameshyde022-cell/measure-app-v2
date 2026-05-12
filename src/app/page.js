@@ -480,7 +480,7 @@ function Gallery() {
                 src={slot.src}
                 alt={`Gallery image ${slot.n}`}
                 fill
-                style={{ objectFit: 'cover' }}
+                style={{ objectFit: 'contain' }}
                 sizes="(max-width: 768px) 50vw, 200px"
               />
             ) : (
