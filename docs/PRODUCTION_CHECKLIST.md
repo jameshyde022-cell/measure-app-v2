@@ -1,16 +1,17 @@
 # MEASURE — Production Checklist
 
-Status as of 2026-07-20, production domain cutover (commit `f4dde13`). Live at both `https://measure-app-v2-pl2.vercel.app` and `https://measureapp.pro` (DNS fully propagated to major resolvers and Vercel's edge; some local/ISP resolver caches worldwide may take up to ~1 hour more to fully clear, standard TTL behavior).
+Status as of 2026-07-20, production domain cutover + Data Cache fix (commit `1ba38e8`). Live at both `https://measure-app-v2-pl2.vercel.app` and `https://measureapp.pro`.
 
 ## Security
 - [x] `AUTH_SECRET` set in Vercel production env (real random value, rotated from an empty live value found during audit); code throws if missing rather than using fallback
 - [x] `/admin` + admin APIs require an allowlisted admin session (`ADMIN_EMAILS=jameshyde022@gmail.com`; verified live via direct browser test — non-admin account redirected off `/admin`, `/api/marketing-list` returns Forbidden)
-- [x] `subscribers` and `user_referrals` RLS — **confirmed active in the database**: tested with a real anonymous request (blocked) and a real authenticated user JWT (blocked at the same strict level — see note below)
-- [x] Free daily export limit enforced server-side — **confirmed via real browser test**: 3 exports succeed, 4th blocked with correct message
-- [ ] Stripe webhook idempotency — **table `processed_webhook_events` still does not exist**; migration 008 needs to be re-applied (confirmed via direct signed-webhook test against the live endpoint, still 500s)
+- [x] `subscribers` and `user_referrals` RLS — confirmed active in the database: tested with a real anonymous request (blocked) and a real authenticated user JWT (blocked at the same strict level — see note below)
+- [x] Free daily export limit enforced server-side — confirmed via real browser test: 3 exports succeed, 4th blocked with correct message
+- [x] Stripe webhook idempotency — migration `008` applied and verified: real signed event processed and recorded, duplicate delivery of the same event correctly skipped (`duplicate: true`), invalid signatures rejected (400)
 - [x] No secret keys anywhere in client-side bundles
 - [x] `.env` confirmed never committed to git
 - [x] Two-test-user RLS cross-access check — performed with real Supabase JWTs; anon and authenticated-self both blocked from `subscribers`/`user_referrals` via the public API (stricter than the minimum bar — app is unaffected since it only ever reads via service-role server routes)
+- [x] **Found and fixed a serious Data Cache poisoning bug**: Next.js/Vercel caches `supabase-js`'s internal `fetch` calls by default, keyed on the exact query URL. During a brief earlier misconfiguration window, one query got a stale/empty result cached, which then persisted indefinitely — a real, live symptom of this was a paying test account showing as free-tier in `/api/auth/me` while `/api/profile` (a differently-shaped query, different cache key) correctly showed Pro. Applied `cache: 'no-store'` to every one of the 16 server-side Supabase client construction sites in the codebase (confirmed 16/16 via grep), including the shared `getSupabase()` helper that backs the daily-export-limit check — this was a real risk to that specific security fix, not just a display issue. Verified live: Pro status now agrees across all endpoints.
 
 ## Domain
 - [x] `measureapp.pro` + `www.measureapp.pro` added to Vercel project (`measure-app-v2-pl2`)
@@ -39,19 +40,19 @@ Status as of 2026-07-20, production domain cutover (commit `f4dde13`). Live at b
 - [x] Free-tier watermark shows correct domain — confirmed visually in an actual exported image
 
 ## Free/Pro Business Rules
-- [x] 3 exports/day free limit — **verified live via real browser test** (1st-3rd succeed, 4th blocked with correct message and disabled button)
+- [x] 3 exports/day free limit — verified live via real browser test (1st-3rd succeed, 4th blocked with correct message and disabled button)
 - [x] Limit-reached message + upgrade prompt — verified live
 - [x] Pro status only ever driven by DB, never client state — verified in code
-- [ ] Pro access grant end-to-end — blocked on migration 008 (webhook currently can't write `is_pro=true` because it 500s before reaching that logic)
+- [x] **Pro access grant end-to-end — fully verified live**: signed webhook event → `is_pro=true` written to DB → confirmed matching in both `/api/profile` and `/api/auth/me` (the one the editor UI actually uses) after the cache fix
 
 ## Stripe
 - [x] Live-mode monthly price confirmed active ($9.99/mo)
-- [x] **Yearly price created** ($29.99/yr, `price_1TvDCZAchI5lpRlrqoWIYfiS`), env var set, redeployed, **both monthly and yearly Checkout Session creation verified live** (real Stripe sessions created then immediately expired, no charge)
+- [x] Yearly price created ($29.99/yr, `price_1TvDCZAchI5lpRlrqoWIYfiS`), env var set, redeployed, both monthly and yearly Checkout Session creation verified live (real Stripe sessions created then immediately expired, no charge)
 - [x] Checkout success/cancel URLs point to `measureapp.pro`
-- [x] Webhook endpoint — cleaned up (found and removed 2 accidental duplicates), one clean endpoint now registered at `https://measureapp.pro/api/webhook`, signing secret rotated and matched in Vercel, **signature verification confirmed working live** on the final domain
-- [ ] Webhook idempotency — code correct, inert until migration 008 applied
+- [x] Webhook endpoint — cleaned up (found and removed 2 accidental duplicates), one clean endpoint registered at `https://measureapp.pro/api/webhook`, signing secret rotated and matched in Vercel
+- [x] Webhook idempotency — **fully verified live**: first delivery processed (`received:true`), duplicate delivery of the same event ID correctly skipped (`received:true, duplicate:true`)
 - [x] Invalid webhook signatures rejected — confirmed live (400)
-- [x] Customer Portal built — route + UI added; not live-tested with a real subscription (none exists yet)
+- [x] Customer Portal built — route + UI added; not live-tested with a real subscription (none exists yet, would require a real charge)
 - [x] Cancellation flow — pre-existing, untouched
 
 ## Legal / Business Pages
