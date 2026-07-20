@@ -19,6 +19,27 @@ export async function POST(req) {
     return NextResponse.json({ error: 'Invalid signature' }, { status: 400 });
   }
 
+  // Idempotency: record the event ID before doing any work. Stripe retries
+  // deliveries, so a primary-key conflict means we've already processed this
+  // event — skip it and return 200 so Stripe stops retrying.
+  const { error: dedupeError } = await supabase
+    .from('processed_webhook_events')
+    .insert({ event_id: event.id });
+
+  if (dedupeError) {
+    // 23505 = unique_violation → this event was already processed. Return 200
+    // (without re-running any handling logic) so Stripe stops retrying.
+    if (dedupeError.code === '23505') {
+      console.log('[webhook] Duplicate event skipped:', event.id);
+      return NextResponse.json({ received: true, duplicate: true });
+    }
+    // Any other insert error means we couldn't record the event. Don't process
+    // it (that risks double-applying non-idempotent logic on a later retry) and
+    // don't silently drop it — return 500 so Stripe redelivers.
+    console.error('[webhook] Dedupe insert error:', dedupeError.message);
+    return NextResponse.json({ error: 'Webhook processing error' }, { status: 500 });
+  }
+
   // Grant pro access and store Stripe IDs when checkout completes
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;

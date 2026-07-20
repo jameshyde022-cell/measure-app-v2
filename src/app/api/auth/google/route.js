@@ -1,6 +1,6 @@
 export async function GET(request) {
   const supabaseUrl = (process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '').replace(/\/$/, '')
-  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://measure-app-hazel.vercel.app').replace(/\/$/, '')
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL || 'https://measureapp.pro').replace(/\/$/, '')
   const debug = new URL(request.url).searchParams.get('debug') === '1'
 
   if (!supabaseUrl) {

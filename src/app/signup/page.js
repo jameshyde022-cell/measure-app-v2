@@ -3,6 +3,7 @@
 import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { track } from '@vercel/analytics'
 
 const C = {
   bg: '#0d0d0d', surface: '#111111', border: '#1e1e1e',
@@ -50,6 +51,7 @@ function SignupForm() {
     }
     setLoading(true)
     setError(null)
+    track('signup_started')
 
     try {
       const res = await fetch('/api/auth/signup', {
@@ -65,6 +67,7 @@ function SignupForm() {
         return
       }
 
+      track('signup_completed')
       window.location.href = '/login?signup=1'
     } catch {
       setError('Something went wrong. Please try again.')

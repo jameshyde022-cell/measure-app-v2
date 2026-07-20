@@ -1,8 +1,9 @@
 import './globals.css'
 import { Analytics } from '@vercel/analytics/next'
+import Footer from '../components/Footer'
 export const metadata = {
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.NEXT_PUBLIC_APP_URL ??
     (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
   ),
   title: 'MEASURE — Listing image tool for clothing resellers',
@@ -31,7 +32,7 @@ export default function RootLayout({ children }) {
         <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&display=swap" rel="stylesheet" />
         <meta name="theme-color" content="#e8b84b" />
       </head>
-      <body>{children}<Analytics /></body>
+      <body>{children}<Footer /><Analytics /></body>
     </html>
   )
 }

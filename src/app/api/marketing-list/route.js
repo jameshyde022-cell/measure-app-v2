@@ -1,6 +1,13 @@
 import { createClient } from '@supabase/supabase-js'
+import { getEmailFromRequest } from '../../../lib/auth'
+import { isAdminEmail } from '../../../lib/adminEmails'
 
-export async function GET() {
+export async function GET(request) {
+  const email = await getEmailFromRequest(request)
+  if (!isAdminEmail(email)) {
+    return Response.json({ error: 'Forbidden' }, { status: 403 })
+  }
+
   const supabase = createClient(
     process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY

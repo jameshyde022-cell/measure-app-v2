@@ -39,6 +39,8 @@ export default function ProfilePage() {
   const [cancelling, setCancelling] = useState(false)
   const [cancelDone, setCancelDone] = useState(false)
   const [cancelError, setCancelError] = useState(null)
+  const [portalLoading, setPortalLoading] = useState(false)
+  const [portalError, setPortalError] = useState(null)
 
   useEffect(() => {
     fetch('/api/profile')
@@ -73,6 +75,23 @@ export default function ProfilePage() {
       setCancelError('Network error. Please try again.')
     }
     setCancelling(false)
+  }
+
+  const manageBilling = async () => {
+    setPortalLoading(true)
+    setPortalError(null)
+    try {
+      const res = await fetch('/api/portal', { method: 'POST' })
+      const data = await res.json()
+      if (res.ok && data.url) {
+        window.location.href = data.url
+        return
+      }
+      setPortalError(data.error || 'Could not open billing portal. Please try again.')
+    } catch {
+      setPortalError('Network error. Please try again.')
+    }
+    setPortalLoading(false)
   }
 
   if (loading) {
@@ -184,6 +203,20 @@ export default function ProfilePage() {
           {isCancelledAtPeriodEnd && (
             <div style={{ marginTop: 8, fontSize: 11, color: '#f0c040' }}>
               Subscription cancelled — access continues until {periodEnd}.
+            </div>
+          )}
+
+          {/* Manage Billing — Stripe customer portal for subscription holders */}
+          {has_subscription && (
+            <div style={{ marginTop: 12 }}>
+              <button onClick={manageBilling} disabled={portalLoading} style={{
+                padding: '8px 16px', background: 'transparent', border: `1px solid ${C.border}`,
+                borderRadius: 6, fontFamily: 'monospace', fontSize: 11,
+                color: C.muted, cursor: portalLoading ? 'not-allowed' : 'pointer', letterSpacing: '0.06em',
+              }}>
+                {portalLoading ? 'Opening…' : 'Manage Billing'}
+              </button>
+              {portalError && <div style={{ fontSize: 11, color: C.error, marginTop: 8 }}>{portalError}</div>}
             </div>
           )}
         </Section>

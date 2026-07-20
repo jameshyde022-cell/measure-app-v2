@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { track } from '@vercel/analytics';
 
 const PRESET_MEASUREMENTS = [
   'Waist','Outseam','Inseam','Rise','Thigh','Knee','Leg Opening',
@@ -16,6 +17,7 @@ const LINE_COLORS = [
 const HIT_RADIUS = 22;
 const FREE_MAX_LINES = 4;
 const FREE_MAX_EXPORTS_PER_DAY = 3;
+const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
 function todayKey(email) {
   const date = new Date().toISOString().slice(0,10);
@@ -118,9 +120,36 @@ function renderExportImage(canvas,img,lines) {
   });
 }
 
+function renderCropCanvas(canvas,img,rect) {
+  if (!canvas||!img) return;
+  const ctx=canvas.getContext('2d');
+  const W=canvas.width,H=canvas.height;
+  ctx.clearRect(0,0,W,H);
+  ctx.drawImage(img,0,0,W,H);
+  // Dim the region outside the crop rectangle
+  ctx.fillStyle='rgba(6,6,6,0.62)';
+  ctx.fillRect(0,0,W,rect.y);
+  ctx.fillRect(0,rect.y+rect.h,W,H-(rect.y+rect.h));
+  ctx.fillRect(0,rect.y,rect.x,rect.h);
+  ctx.fillRect(rect.x+rect.w,rect.y,W-(rect.x+rect.w),rect.h);
+  // Crop border
+  ctx.strokeStyle='#e8b84b'; ctx.lineWidth=2;
+  ctx.strokeRect(rect.x,rect.y,rect.w,rect.h);
+  // Corner handles
+  const hs=10;
+  const corners=[[rect.x,rect.y],[rect.x+rect.w,rect.y],[rect.x,rect.y+rect.h],[rect.x+rect.w,rect.y+rect.h]];
+  corners.forEach(([cx,cy])=>{
+    ctx.fillStyle='#e8b84b';
+    ctx.fillRect(cx-hs/2,cy-hs/2,hs,hs);
+    ctx.strokeStyle='rgba(0,0,0,0.6)'; ctx.lineWidth=1;
+    ctx.strokeRect(cx-hs/2,cy-hs/2,hs,hs);
+  });
+}
+
 export default function MeasureTool() {
   const [phase,setPhase]             = useState('upload');
   const [naturalSize,setNatural]     = useState({w:1,h:1});
+  const [cropRect,setCropRect]       = useState({x:0,y:0,w:0,h:0});
   const [lines,setLines]             = useState([]);
   const [hoverIdx,setHoverIdx]       = useState(null);
   const [dragging,setDragging]       = useState(false);
@@ -137,6 +166,7 @@ export default function MeasureTool() {
   const [showExport,setShowExport]   = useState(false);
   const [bgRemoving,setBgRemoving]   = useState(false);
   const [bgError,setBgError]         = useState(null);
+  const [uploadError,setUploadError] = useState(null);
   const [loadingStep,setLoadingStep] = useState(0);
   const [aspectRatio,setAspectRatio] = useState('original');
   const [ix,setIx]                   = useState({mode:'idle',p1:null,p2:null,color:LINE_COLORS[0],dragging:null});
@@ -177,6 +207,8 @@ export default function MeasureTool() {
   ];
 
   const canvasRef        = useRef(null);
+  const cropCanvasRef    = useRef(null);
+  const cropDragRef      = useRef(null);
   const exportRef        = useRef(null);
   const imgRef           = useRef(null);
   const fileRef          = useRef(null);
@@ -213,6 +245,25 @@ export default function MeasureTool() {
     renderCanvas(canvasRef.current,imgRef.current,lines,ixRef.current,hoverIdx);
   },[phase,naturalSize]);
 
+  // Size the crop canvas to fit the viewport and reset the crop box to the full image
+  useEffect(()=>{
+    if (phase!=='crop'||!cropCanvasRef.current||!imgRef.current) return;
+    const maxW=window.innerWidth-16;
+    const maxH=window.innerHeight*0.70;
+    const {w,h}=naturalSize;
+    const scale=Math.min(maxW/w,maxH/h);
+    const cw=Math.floor(w*scale),ch=Math.floor(h*scale);
+    cropCanvasRef.current.width=cw;
+    cropCanvasRef.current.height=ch;
+    setCropRect({x:0,y:0,w:cw,h:ch});
+  },[phase,naturalSize]);
+
+  // Redraw the crop canvas whenever the crop rectangle changes
+  useEffect(()=>{
+    if (phase!=='crop') return;
+    renderCropCanvas(cropCanvasRef.current,imgRef.current,cropRect);
+  },[phase,cropRect]);
+
   const loadImageFromBlob=(blob)=>{
     const url=URL.createObjectURL(blob);
     const img=new Image();
@@ -220,7 +271,13 @@ export default function MeasureTool() {
       imgRef.current=img;
       setNatural({w:img.naturalWidth,h:img.naturalHeight});
       setBgRemoving(false);
-      setPhase('annotate');
+      setPhase('crop');
+      URL.revokeObjectURL(url);
+    };
+    img.onerror=()=>{
+      console.error('[loadImageFromBlob] failed to load processed image');
+      setBgRemoving(false);
+      setBgError('Could not load the processed image. Please try again.');
       URL.revokeObjectURL(url);
     };
     img.src=url;
@@ -228,12 +285,21 @@ export default function MeasureTool() {
 
   const handleFlatLay=useCallback((file)=>{
     if (!file||!file.type.startsWith('image/')) return;
+    if (file.size>MAX_FILE_SIZE) { setUploadError('Image is too large (max 20MB). Please choose a smaller photo.'); return; }
+    setUploadError(null);
+    track('upload_started', { mode: 'skip_bg_removal' });
+    track('bg_removal_skipped');
     setLines([]); setColorIdx(0); setShowExport(false); setBgError(null); setLimitMsg(null);
+    setCropRect({x:0,y:0,w:0,h:0});
     setIx({mode:'idle',p1:null,p2:null,color:LINE_COLORS[0],dragging:null});
     const reader=new FileReader();
     reader.onload=e=>{
       const img=new Image();
-      img.onload=()=>{ imgRef.current=img; setNatural({w:img.naturalWidth,h:img.naturalHeight}); setPhase('annotate'); };
+      img.onload=()=>{ imgRef.current=img; setNatural({w:img.naturalWidth,h:img.naturalHeight}); setPhase('crop'); };
+      img.onerror=()=>{
+        console.error('[handleFlatLay] failed to load image');
+        setBgError('Could not load this image. Please try a different photo (JPG, PNG, or WEBP).');
+      };
       img.src=e.target.result;
     };
     reader.readAsDataURL(file);
@@ -241,7 +307,11 @@ export default function MeasureTool() {
 
   const handleFile=useCallback(async(file)=>{
     if (!file||!file.type.startsWith('image/')) return;
+    if (file.size>MAX_FILE_SIZE) { setUploadError('Image is too large (max 20MB). Please choose a smaller photo.'); return; }
+    setUploadError(null);
+    track('upload_started', { mode: 'auto_bg_removal' });
     setLines([]); setColorIdx(0); setShowExport(false); setBgError(null); setLimitMsg(null);
+    setCropRect({x:0,y:0,w:0,h:0});
     setIx({mode:'idle',p1:null,p2:null,color:LINE_COLORS[0],dragging:null});
     setBgRemoving(true); setLoadingStep(0);
     let stepIdx=0;
@@ -249,15 +319,21 @@ export default function MeasureTool() {
     try {
       const fd=new FormData(); fd.append('image_file',file); fd.append('gender',gender);
       const res=await fetch('/api/ghost-mannequin',{method:'POST',body:fd});
-      if (res.ok) { clearInterval(si); loadImageFromBlob(await res.blob()); return; }
+      if (res.ok) { clearInterval(si); track('bg_removal_used'); loadImageFromBlob(await res.blob()); return; }
       clearInterval(si);
       const err=await res.json().catch(()=>({}));
+      track('bg_removal_failed');
       setBgError(err.error||'Ghost mannequin generation failed. Using original photo.');
-    } catch(e) { clearInterval(si); setBgError('Ghost mannequin generation failed. Using original photo.'); }
+    } catch(e) { clearInterval(si); track('bg_removal_failed'); setBgError('Ghost mannequin generation failed. Using original photo.'); }
     const reader=new FileReader();
     reader.onload=e=>{
       const img=new Image();
-      img.onload=()=>{ imgRef.current=img; setNatural({w:img.naturalWidth,h:img.naturalHeight}); setBgRemoving(false); setPhase('annotate'); };
+      img.onload=()=>{ imgRef.current=img; setNatural({w:img.naturalWidth,h:img.naturalHeight}); setBgRemoving(false); setPhase('crop'); };
+      img.onerror=()=>{
+        console.error('[handleFile] fallback image load failed');
+        setBgRemoving(false);
+        setBgError('Could not load this image. Please try a different photo (JPG, PNG, or WEBP).');
+      };
       img.src=e.target.result;
     };
     reader.readAsDataURL(file);
@@ -268,9 +344,95 @@ export default function MeasureTool() {
     return {x:(clientX-r.left)*(c.width/r.width),y:(clientY-r.top)*(c.height/r.height)};
   };
 
+  // --- Crop phase interaction ---
+  const CROP_HANDLE_HIT=22;
+  const CROP_MIN=24;
+
+  const toCropCanvas=(clientX,clientY)=>{
+    const c=cropCanvasRef.current,r=c.getBoundingClientRect();
+    return {x:(clientX-r.left)*(c.width/r.width),y:(clientY-r.top)*(c.height/r.height)};
+  };
+
+  const onCropDown=(clientX,clientY)=>{
+    if (!cropCanvasRef.current) return;
+    const {x,y}=toCropCanvas(clientX,clientY);
+    const rc=cropRect;
+    const corners={
+      nw:[rc.x,rc.y],ne:[rc.x+rc.w,rc.y],
+      sw:[rc.x,rc.y+rc.h],se:[rc.x+rc.w,rc.y+rc.h],
+    };
+    let mode=null;
+    for (const k of Object.keys(corners)) {
+      const [cx,cy]=corners[k];
+      if (Math.hypot(x-cx,y-cy)<CROP_HANDLE_HIT) { mode=k; break; }
+    }
+    if (!mode && x>rc.x && x<rc.x+rc.w && y>rc.y && y<rc.y+rc.h) mode='move';
+    if (mode) cropDragRef.current={mode,startX:x,startY:y,startRect:{...rc}};
+  };
+
+  const onCropMove=(clientX,clientY)=>{
+    const d=cropDragRef.current; if (!d) return;
+    const c=cropCanvasRef.current; if (!c) return;
+    const {x,y}=toCropCanvas(clientX,clientY);
+    const W=c.width,H=c.height,s=d.startRect;
+    if (d.mode==='move') {
+      let nx=Math.max(0,Math.min(s.x+(x-d.startX),W-s.w));
+      let ny=Math.max(0,Math.min(s.y+(y-d.startY),H-s.h));
+      setCropRect({x:nx,y:ny,w:s.w,h:s.h});
+      return;
+    }
+    let left=s.x,top=s.y,right=s.x+s.w,bottom=s.y+s.h;
+    const cx=Math.max(0,Math.min(x,W));
+    const cy=Math.max(0,Math.min(y,H));
+    if (d.mode==='nw') { left=cx; top=cy; }
+    else if (d.mode==='ne') { right=cx; top=cy; }
+    else if (d.mode==='sw') { left=cx; bottom=cy; }
+    else if (d.mode==='se') { right=cx; bottom=cy; }
+    let nx=Math.min(left,right),nw=Math.abs(right-left);
+    let ny=Math.min(top,bottom),nh=Math.abs(bottom-top);
+    if (nw<CROP_MIN) nw=CROP_MIN;
+    if (nh<CROP_MIN) nh=CROP_MIN;
+    if (nx+nw>W) nx=W-nw;
+    if (ny+nh>H) ny=H-nh;
+    if (nx<0) nx=0;
+    if (ny<0) ny=0;
+    setCropRect({x:nx,y:ny,w:nw,h:nh});
+  };
+
+  const onCropUp=()=>{ cropDragRef.current=null; };
+
+  const resetCrop=()=>{
+    const c=cropCanvasRef.current; if (!c) return;
+    setCropRect({x:0,y:0,w:c.width,h:c.height});
+  };
+
+  const skipCrop=()=>{ track('crop_skipped'); setPhase('annotate'); };
+
+  const confirmCrop=()=>{
+    const c=cropCanvasRef.current,src=imgRef.current;
+    if (!c||!src) { setPhase('annotate'); return; }
+    const sx=naturalSize.w/c.width,sy=naturalSize.h/c.height;
+    let cx=Math.round(cropRect.x*sx);
+    let cy=Math.round(cropRect.y*sy);
+    let cw=Math.round(cropRect.w*sx);
+    let ch=Math.round(cropRect.h*sy);
+    cx=Math.max(0,Math.min(cx,naturalSize.w-1));
+    cy=Math.max(0,Math.min(cy,naturalSize.h-1));
+    cw=Math.max(1,Math.min(cw,naturalSize.w-cx));
+    ch=Math.max(1,Math.min(ch,naturalSize.h-cy));
+    const oc=document.createElement('canvas');
+    oc.width=cw; oc.height=ch;
+    oc.getContext('2d').drawImage(src,cx,cy,cw,ch,0,0,cw,ch);
+    imgRef.current=oc;
+    setNatural({w:cw,h:ch});
+    track('crop_confirmed');
+    setPhase('annotate');
+  };
+
   const startNewLine=useCallback(()=>{
     if (!pro&&lines.length>=FREE_MAX_LINES) {
       setLimitMsg('Free plan is limited to 4 measurement lines. Upgrade to Pro for unlimited.');
+      track('limit_reached', { reason: 'line_limit' });
       return;
     }
     setLimitMsg(null);
@@ -410,7 +572,7 @@ export default function MeasureTool() {
     } else {
       ctx.fillStyle='#e8b84b'; ctx.fillText('MEASURE',PAD,wy+WATERMARK_H/2);
       ctx.font='9px monospace'; ctx.fillStyle='#666'; ctx.textAlign='right';
-      ctx.fillText('Free Version - measure-app-v2-pl2.vercel.app',W-PAD,wy+WATERMARK_H/2);
+      ctx.fillText(`Free Version - ${(process.env.NEXT_PUBLIC_APP_URL || 'https://measureapp.pro').replace(/^https?:\/\//, '')}`,W-PAD,wy+WATERMARK_H/2);
     }
 
     return ec;
@@ -419,10 +581,17 @@ export default function MeasureTool() {
   const handleExport=()=>{
     if(!pro&&exportCount>=FREE_MAX_EXPORTS_PER_DAY){
       setLimitMsg(`You've used all 3 free exports for today. Upgrade to Pro for unlimited exports.`);
+      track('limit_reached', { reason: 'export_limit_client' });
       return;
     }
+    track('export_attempted');
     const ec=buildExportCanvas(); if(!ec) return;
     const el=exportRef.current;
+    if(!el){
+      console.error('[handleExport] exportRef.current is null — export canvas not mounted');
+      setSaveError('Export failed — please try again.');
+      return;
+    }
     el.width=ec.width; el.height=ec.height;
     el.getContext('2d').drawImage(ec,0,0);
     if(!pro){
@@ -434,43 +603,56 @@ export default function MeasureTool() {
     setSaving(true); setSuggestedPrice(null); setSavedRecordId(null); setSaveError(null);
     setTimeout(()=>exportSectionRef.current?.scrollIntoView({behavior:'smooth',block:'start'}),150);
     // Use the DOM-attached exportRef canvas — more reliable than the off-screen ec canvas
-    exportRef.current.toBlob(async(blob)=>{
-      if(!blob){
-        console.error('[save-export] toBlob returned null — canvas may be tainted or empty');
-        setSaveError('Failed to read export image for upload');
-        setSaving(false);
-        return;
-      }
-      console.log('[save-export] blob size:', blob.size, 'bytes');
-      try{
-        const fd=new FormData();
-        fd.append('image',blob,'export.png');
-        fd.append('brand',brand);
-        fd.append('clothingType',clothingType);
-        fd.append('condition',condition);
-        fd.append('taggedSize',taggedSize);
-        fd.append('flaws',flaws);
-        fd.append('weightOz',weightOz);
-        fd.append('mannequin_type',gender);
-        fd.append('measurements',JSON.stringify(lines));
-        const res=await fetch('/api/inventory/save-export',{method:'POST',body:fd});
-        if(res.ok){
-          const d=await res.json();
-          setSuggestedPrice(d.suggestedPrice);
-          setSavedRecordId(d.recordId);
-        } else {
-          let errMsg='Inventory save failed';
-          try{const e=await res.json();errMsg=e.error||(e.hint?e.error+' — '+e.hint:errMsg);}catch{}
-          console.error('[save-export] API error',res.status,errMsg);
-          setSaveError(errMsg);
-        }
-      }catch(e){
-        console.error('[save-export] fetch error:',e);
-        setSaveError('Network error during inventory save — check console for details');
-      }
-      setSaving(false);
+    exportRef.current.toBlob((blob)=>{
+      handleExportBlob(blob);
     },'image/png');
   };
+
+  async function handleExportBlob(blob) {
+    if(!blob){
+      console.error('[save-export] toBlob returned null — canvas may be tainted or empty');
+      setSaveError('Failed to read export image for upload');
+      setSaving(false);
+      return;
+    }
+    console.log('[save-export] blob size:', blob.size, 'bytes');
+    try{
+      const fd=new FormData();
+      fd.append('image',blob,'export.png');
+      fd.append('brand',brand);
+      fd.append('clothingType',clothingType);
+      fd.append('condition',condition);
+      fd.append('taggedSize',taggedSize);
+      fd.append('flaws',flaws);
+      fd.append('weightOz',weightOz);
+      fd.append('mannequin_type',gender);
+      fd.append('measurements',JSON.stringify(lines));
+      const res=await fetch('/api/inventory/save-export',{method:'POST',body:fd});
+      if(res.ok){
+        const d=await res.json();
+        track('export_completed');
+        setSuggestedPrice(d.suggestedPrice);
+        setSavedRecordId(d.recordId);
+      } else {
+        let errMsg='Inventory save failed';
+        try{const e=await res.json();errMsg=e.error||(e.hint?e.error+' — '+e.hint:errMsg);}catch{}
+        if(res.status===403){
+          // Server is the source of truth for the free daily export limit.
+          track('limit_reached', { reason: 'export_limit_server' });
+          setLimitMsg(errMsg);
+        } else {
+          console.error('[save-export] API error',res.status,errMsg);
+          track('export_failed');
+          setSaveError(errMsg);
+        }
+      }
+    }catch(e){
+      console.error('[save-export] fetch error:',e);
+      track('export_failed');
+      setSaveError('Network error during inventory save — check console for details');
+    }
+    setSaving(false);
+  }
 
   const handleDownload=()=>{
     const el=exportRef.current; if(!el) return;
@@ -618,7 +800,7 @@ export default function MeasureTool() {
             {pro?'PRO':`FREE ${exportsLeft > 0 ? `(${exportsLeft} exports left)` : '(0 left)'}`}
           </div>
           {!pro&&(
-            <button onClick={()=>window.location.href='/pricing'} style={{padding:'4px 10px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>
+            <button onClick={()=>{track('upgrade_clicked', { source: 'header' });window.location.href='/pricing'}} style={{padding:'4px 10px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>
               Upgrade
             </button>
           )}
@@ -696,6 +878,12 @@ export default function MeasureTool() {
             <div style={{fontSize:11,color:'#999',letterSpacing:'0.12em',textAlign:'center',textTransform:'uppercase'}}>
               JPG - PNG - WEBP - Drop anywhere above
             </div>
+
+            {uploadError&&(
+              <div style={{background:'#1a0a0a',border:'1px solid #c8401a',borderRadius:2,padding:'10px 12px'}}>
+                <span style={{fontFamily:'monospace',fontSize:11,color:'#EF9A9A'}}>{uploadError}</span>
+              </div>
+            )}
 
             {/* Rear View Generator */}
             <div style={{borderTop:'1px solid #1a1a1a',paddingTop:20,display:'flex',flexDirection:'column',gap:12}}>
@@ -783,6 +971,42 @@ export default function MeasureTool() {
         </div>
       )}
 
+      {/* CROP */}
+      {phase==='crop'&&(
+        <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
+
+          <div style={{background:'#060606',display:'flex',alignItems:'center',justifyContent:'center',padding:8,flexShrink:0}}>
+            <canvas
+              ref={cropCanvasRef}
+              onMouseDown={e=>onCropDown(e.clientX,e.clientY)}
+              onMouseMove={e=>onCropMove(e.clientX,e.clientY)}
+              onMouseUp={onCropUp}
+              onMouseLeave={onCropUp}
+              onTouchStart={e=>{e.preventDefault();const t=e.touches[0];onCropDown(t.clientX,t.clientY);}}
+              onTouchMove={e=>{e.preventDefault();const t=e.touches[0];onCropMove(t.clientX,t.clientY);}}
+              onTouchEnd={e=>{e.preventDefault();onCropUp();}}
+              style={{cursor:'crosshair',borderRadius:2,maxWidth:'100%',touchAction:'none',display:'block',boxShadow:'0 4px 40px rgba(0,0,0,0.7)'}}
+            />
+          </div>
+
+          <div style={{flex:1,overflowY:'auto',padding:16,display:'flex',flexDirection:'column',gap:12}}>
+            <div style={{background:'#e8b84b11',border:'1px solid #e8b84b33',borderRadius:2,padding:'10px 12px'}}>
+              <div style={{fontSize:11,color:'#e8b84b',fontWeight:'bold'}}>Drag a corner handle to resize the crop. Drag inside the box to move it. Confirm when ready.</div>
+            </div>
+            <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+              <button onClick={confirmCrop} style={{flex:2,minWidth:140,padding:'11px',background:'#81C784',border:'none',fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>
+                Confirm Crop
+              </button>
+              <button onClick={skipCrop} style={{flex:1,minWidth:110,padding:'11px',background:'#e8b84b',border:'none',fontFamily:"'Playfair Display',serif",fontSize:14,fontWeight:700,cursor:'pointer',borderRadius:2,color:'#0d0d0d'}}>
+                Use Full Image
+              </button>
+              <button onClick={resetCrop} style={{...S.ghost,padding:'11px 14px'}}>Reset</button>
+              <button onClick={()=>setPhase('upload')} style={{...S.ghost,padding:'11px 14px'}}>Start Over</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ANNOTATE */}
       {phase==='annotate'&&(
         <div style={{flex:1,display:'flex',flexDirection:'column',overflow:'hidden'}}>
@@ -812,7 +1036,7 @@ export default function MeasureTool() {
             {limitMsg&&(
               <div style={{background:'#1a0a0a',border:'1px solid #c8401a',borderRadius:2,padding:'10px 12px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
                 <span style={{fontSize:11,color:'#EF9A9A'}}>{limitMsg}</span>
-                <button onClick={()=>window.location.href='/pricing'} style={{padding:'4px 10px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d',whiteSpace:'nowrap'}}>
+                <button onClick={()=>{track('upgrade_clicked', { source: 'limit_banner' });window.location.href='/pricing'}} style={{padding:'4px 10px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:11,letterSpacing:'0.12em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d',whiteSpace:'nowrap'}}>
                   Upgrade
                 </button>
               </div>

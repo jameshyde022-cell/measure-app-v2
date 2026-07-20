@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { track } from '@vercel/analytics';
 
 const S = {
   page: { background: '#0d0d0d', minHeight: '100vh', color: '#f0ebe0', fontFamily: 'monospace', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '40px 20px' },
@@ -47,6 +48,7 @@ export default function PricingPage() {
     if (!email) { setError('Please enter your email.'); return; }
     setLoading(plan);
     setError(null);
+    track('checkout_started', { plan });
     try {
       const res = await fetch('/api/checkout', {
         method: 'POST',

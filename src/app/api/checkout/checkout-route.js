@@ -7,7 +7,7 @@ const PRICE_ID_MONTHLY = process.env.STRIPE_PRICE_ID;
 // Recurring, every year, $29.99) then add STRIPE_PRICE_ID_YEARLY=price_xxxx to your env vars.
 const PRICE_ID_YEARLY = process.env.STRIPE_PRICE_ID_YEARLY;
 
-const AFFILIATE_COUPON_ID = 'Ag7Ld0Fp'; // 1 month free (100% off once)
+const AFFILIATE_COUPON_ID = process.env.STRIPE_AFFILIATE_COUPON_ID || 'Ag7Ld0Fp'; // 1 month free (100% off once)
 
 export async function POST(req) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);

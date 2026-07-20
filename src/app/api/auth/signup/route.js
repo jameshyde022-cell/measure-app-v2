@@ -24,7 +24,7 @@ export async function POST(request) {
     auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
   })
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://measure-app-hazel.vercel.app'
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://measureapp.pro'
 
   const { data: signUpData, error } = await supabase.auth.signUp({
     email: normalizedEmail,

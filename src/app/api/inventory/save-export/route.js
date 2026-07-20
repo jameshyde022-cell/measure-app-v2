@@ -23,6 +23,61 @@ export async function POST(request) {
   }
   console.log('[save-export] authenticated as:', email)
 
+  // ── 1b. Supabase client ───────────────────────────────────────────────────
+  let supabase
+  try {
+    supabase = getSupabase()
+  } catch (e) {
+    console.error('[save-export] getSupabase failed:', e.message)
+    return Response.json({ error: 'Database configuration error', details: e.message }, { status: 500 })
+  }
+
+  // ── 1c. Server-side free-tier daily export limit ──────────────────────────
+  // Source of truth for the "3 free exports/day" rule. Checked BEFORE any
+  // storage upload or DB insert so rejected exports do no wasted work and never
+  // count against the user. Pro (and unexpired Pro-trial) users are exempt.
+  try {
+    const { data: sub } = await supabase
+      .from('subscribers')
+      .select('is_pro, pro_trial_expires_at')
+      .eq('email', email.toLowerCase())
+      .maybeSingle()
+
+    let isPro = sub?.is_pro === true
+    if (isPro && sub?.pro_trial_expires_at && new Date(sub.pro_trial_expires_at) < new Date()) {
+      isPro = false
+    }
+
+    if (!isPro) {
+      const now = new Date()
+      const startOfDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+      const startOfTomorrow = new Date(startOfDay.getTime() + 24 * 60 * 60 * 1000)
+
+      const { count, error: countError } = await supabase
+        .from('exported_images')
+        .select('id', { count: 'exact', head: true })
+        .eq('user_email', email)
+        .gte('created_at', startOfDay.toISOString())
+        .lt('created_at', startOfTomorrow.toISOString())
+
+      if (countError) {
+        console.error('[save-export] export count query failed:', countError.message)
+        return Response.json({ error: 'Failed to verify export limit' }, { status: 500 })
+      }
+
+      if ((count ?? 0) >= 3) {
+        console.log('[save-export] daily free export limit reached for:', email)
+        return Response.json(
+          { error: 'Daily free export limit reached. Upgrade to Pro for unlimited exports.' },
+          { status: 403 }
+        )
+      }
+    }
+  } catch (e) {
+    console.error('[save-export] limit check threw:', e.message)
+    return Response.json({ error: 'Failed to verify export limit' }, { status: 500 })
+  }
+
   // ── 2. Parse form data ────────────────────────────────────────────────────
   let formData
   try {
@@ -57,15 +112,6 @@ export async function POST(request) {
   } catch (e) {
     console.error('[save-export] failed to read image buffer:', e.message)
     return Response.json({ error: 'Failed to read image', details: e.message }, { status: 400 })
-  }
-
-  // ── 3. Supabase client ────────────────────────────────────────────────────
-  let supabase
-  try {
-    supabase = getSupabase()
-  } catch (e) {
-    console.error('[save-export] getSupabase failed:', e.message)
-    return Response.json({ error: 'Database configuration error', details: e.message }, { status: 500 })
   }
 
   // ── 4. Upload to Supabase Storage ─────────────────────────────────────────

@@ -1,7 +1,6 @@
 import { createClient } from '@supabase/supabase-js'
 import Stripe from 'stripe'
-
-const SECRET = process.env.AUTH_SECRET ?? 'measure-dev-secret-replace-in-prod'
+import { getAuthSecret } from '../../../../lib/authSecret'
 
 async function getEmailFromRequest(request) {
   const token = request.cookies.get('measure_session')?.value
@@ -13,6 +12,7 @@ async function getEmailFromRequest(request) {
     const payload = atob(payloadB64)
     const data = JSON.parse(payload)
     if (!data.iat || Date.now() - data.iat > 30 * 24 * 60 * 60 * 1000) return null
+    const SECRET = getAuthSecret()
     const encoder = new TextEncoder()
     const key = await crypto.subtle.importKey(
       'raw', encoder.encode(SECRET),

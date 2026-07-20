@@ -1,6 +1,7 @@
-node_modules/ 
-.env 
-.next/ 
-out/ 
+node_modules/
+.env
+.next/
+out/
 .vercel
 .env*.local
+.playwright-mcp/

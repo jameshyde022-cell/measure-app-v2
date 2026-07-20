@@ -1,6 +1,7 @@
-const SECRET = process.env.AUTH_SECRET ?? 'measure-dev-secret-replace-in-prod'
+import { getAuthSecret } from '../../../../lib/authSecret'
 
 async function makeSessionToken(email) {
+  const SECRET = getAuthSecret()
   const payload = JSON.stringify({ email, iat: Date.now() })
   const encoder = new TextEncoder()
   const key = await crypto.subtle.importKey(

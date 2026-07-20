@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import { getEmailFromRequest } from '../../../lib/auth';
+import { isAdminEmail } from '../../../lib/adminEmails';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
@@ -7,6 +9,11 @@ const supabase = createClient(
 );
 
 export async function POST(req) {
+  const callerEmail = await getEmailFromRequest(req);
+  if (!isAdminEmail(callerEmail)) {
+    return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  }
+
   try {
     const { name, email, code } = await req.json();
 

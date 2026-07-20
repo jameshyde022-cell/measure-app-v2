@@ -3,6 +3,7 @@
 import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
+import { track } from '@vercel/analytics'
 
 const C = {
   bg: '#0d0d0d', surface: '#111111', border: '#1e1e1e',
@@ -65,6 +66,7 @@ function LoginForm() {
         return
       }
 
+      track('login_completed')
       window.location.href = next
     } catch {
       setError('Something went wrong. Please try again.')
@@ -96,6 +98,11 @@ function LoginForm() {
           <label style={lbl}>Password</label>
           <input type="password" value={password} onChange={e => setPassword(e.target.value)}
             placeholder="••••••••" required style={inp} />
+          <div style={{ textAlign: 'right', marginTop: 7 }}>
+            <Link href="/forgot-password" style={{ fontSize: 11, color: C.muted, textDecoration: 'none', fontFamily: 'monospace' }}>
+              Forgot password?
+            </Link>
+          </div>
         </div>
 
         {unverified && (

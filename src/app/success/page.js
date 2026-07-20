@@ -1,12 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { track } from '@vercel/analytics';
 
 export default function SuccessPage() {
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     setReady(true);
+    track('checkout_completed');
   }, []);
 
   return (
