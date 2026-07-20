@@ -32,9 +32,14 @@ export async function GET(request) {
     return Response.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
+  // Pro status must always be read live. supabase-js issues queries through the
+  // global fetch, which Next.js/Vercel caches by default in the Data Cache
+  // (keyed on the request URL). A stale cached response can make a paying user
+  // read as free-tier, so force the underlying fetch to bypass the cache.
   const supabase = createClient(
     process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+    process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY,
+    { global: { fetch: (input, init = {}) => fetch(input, { ...init, cache: 'no-store' }) } }
   )
 
   const { data } = await supabase
