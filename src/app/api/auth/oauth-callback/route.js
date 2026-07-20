@@ -73,6 +73,9 @@ export async function POST(request) {
   const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || supabaseAnonKey
   const supabase = createClient(supabaseUrl, supabaseServiceKey, {
     auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+    // Force live reads: supabase-js goes through the global fetch, which
+    // Next.js/Vercel caches by default. Bypass the Data Cache.
+    global: { fetch: (input, init = {}) => fetch(input, { ...init, cache: 'no-store' }) },
   })
 
   const { data: existing } = await supabase

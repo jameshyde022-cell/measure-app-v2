@@ -51,5 +51,11 @@ export function getSupabase() {
       persistSession: false,
       detectSessionInUrl: false,
     },
+    // Reads must always be live. supabase-js issues queries through the global
+    // fetch, which Next.js/Vercel caches by default in the Data Cache (keyed on
+    // the request URL). A stale cached response can make a paying user read as
+    // free-tier or let a free user bypass server-side limits, so force the
+    // underlying fetch to bypass the cache.
+    global: { fetch: (input, init = {}) => fetch(input, { ...init, cache: 'no-store' }) },
   })
 }

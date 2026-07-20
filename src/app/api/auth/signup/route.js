@@ -22,6 +22,9 @@ export async function POST(request) {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
   const supabase = createClient(url, key, {
     auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+    // Force live reads: supabase-js goes through the global fetch, which
+    // Next.js/Vercel caches by default. Bypass the Data Cache.
+    global: { fetch: (input, init = {}) => fetch(input, { ...init, cache: 'no-store' }) },
   })
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://measureapp.pro'

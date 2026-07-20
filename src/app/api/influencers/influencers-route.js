@@ -5,7 +5,10 @@ import { isAdminEmail } from '../../../lib/adminEmails';
 
 const supabase = createClient(
   process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY,
+  // Force live reads: supabase-js goes through the global fetch, which
+  // Next.js/Vercel caches by default. Bypass the Data Cache.
+  { global: { fetch: (input, init = {}) => fetch(input, { ...init, cache: 'no-store' }) } }
 );
 
 export async function GET(request) {

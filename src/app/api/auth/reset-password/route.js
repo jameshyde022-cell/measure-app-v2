@@ -5,6 +5,9 @@ function getAnonClient() {
   const key = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
   return createClient(url, key, {
     auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+    // Force live reads: supabase-js goes through the global fetch, which
+    // Next.js/Vercel caches by default. Bypass the Data Cache.
+    global: { fetch: (input, init = {}) => fetch(input, { ...init, cache: 'no-store' }) },
   })
 }
 
@@ -13,6 +16,9 @@ function getAdminClient() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY
   return createClient(url, key, {
     auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+    // Force live reads: supabase-js goes through the global fetch, which
+    // Next.js/Vercel caches by default. Bypass the Data Cache.
+    global: { fetch: (input, init = {}) => fetch(input, { ...init, cache: 'no-store' }) },
   })
 }
 
