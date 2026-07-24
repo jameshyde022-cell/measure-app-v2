@@ -149,15 +149,15 @@ export default function PricingPage() {
               {hasDiscount ? (
                 <>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 6 }}>
-                    <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 700, color: '#e8b84b' }}>$9.99</span>
+                    <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 700, color: '#e8b84b' }}>$4.95</span>
                     <span style={{ fontSize: 12, color: '#555' }}>/mo</span>
                   </div>
-                  <div style={{ fontSize: 10, color: '#81C784' }}>First 2 months for the price of 1 · then $9.99/mo</div>
+                  <div style={{ fontSize: 10, color: '#81C784' }}>First 2 months for the price of 1 · then $4.95/mo</div>
                 </>
               ) : (
                 <>
                   <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 6 }}>
-                    <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 700, color: '#e8b84b' }}>$9.99</span>
+                    <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 700, color: '#e8b84b' }}>$4.95</span>
                     <span style={{ fontSize: 12, color: '#555' }}>/mo</span>
                   </div>
                   <div style={{ fontSize: 10, color: '#555' }}>Cancel anytime</div>
@@ -194,10 +194,10 @@ export default function PricingPage() {
                 Pro Yearly
               </div>
               <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 6 }}>
-                <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 700, color: '#e8b84b' }}>$29.99</span>
+                <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 700, color: '#e8b84b' }}>$19.95</span>
                 <span style={{ fontSize: 12, color: '#555' }}>/yr</span>
               </div>
-              <div style={{ fontSize: 10, color: '#555' }}>~$2.50/mo · save over 74% vs monthly</div>
+              <div style={{ fontSize: 10, color: '#555' }}>~$1.66/mo · save over 66% vs monthly</div>
             </div>
 
             <div style={{ flex: 1, marginBottom: 24 }}>

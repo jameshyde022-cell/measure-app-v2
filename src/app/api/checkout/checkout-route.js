@@ -4,7 +4,7 @@ import { createClient } from '@supabase/supabase-js';
 
 const PRICE_ID_MONTHLY = process.env.STRIPE_PRICE_ID;
 // TODO: Create a yearly price in your Stripe dashboard (Products → your product → Add price →
-// Recurring, every year, $29.99) then add STRIPE_PRICE_ID_YEARLY=price_xxxx to your env vars.
+// Recurring, every year, $19.95) then add STRIPE_PRICE_ID_YEARLY=price_xxxx to your env vars.
 const PRICE_ID_YEARLY = process.env.STRIPE_PRICE_ID_YEARLY;
 
 const AFFILIATE_COUPON_ID = process.env.STRIPE_AFFILIATE_COUPON_ID || 'Ag7Ld0Fp'; // 1 month free (100% off once)

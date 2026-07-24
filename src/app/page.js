@@ -633,7 +633,7 @@ function Pricing() {
     },
     {
       name: 'Pro Monthly',
-      price: '$9.99',
+      price: '$4.95',
       period: '/month',
       badge: null,
       highlight: false,
@@ -652,7 +652,7 @@ function Pricing() {
     },
     {
       name: 'Pro Yearly',
-      price: '$29.99',
+      price: '$19.95',
       period: '/year',
       badge: 'Best Value',
       highlight: true,

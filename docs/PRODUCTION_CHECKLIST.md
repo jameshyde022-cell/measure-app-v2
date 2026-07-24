@@ -46,8 +46,8 @@ Status as of 2026-07-20, production domain cutover + Data Cache fix (commit `1ba
 - [x] **Pro access grant end-to-end — fully verified live**: signed webhook event → `is_pro=true` written to DB → confirmed matching in both `/api/profile` and `/api/auth/me` (the one the editor UI actually uses) after the cache fix
 
 ## Stripe
-- [x] Live-mode monthly price confirmed active ($9.99/mo)
-- [x] Yearly price created ($29.99/yr, `price_1TvDCZAchI5lpRlrqoWIYfiS`), env var set, redeployed, both monthly and yearly Checkout Session creation verified live (real Stripe sessions created then immediately expired, no charge)
+- [x] Live-mode monthly price confirmed active ($4.95/mo, `price_1Twf5aAchI5lpRlrUmRkunc0` — replaced old $9.99 price 2026-07-23, old price archived)
+- [x] Yearly price created ($19.95/yr, `price_1Twf5bAchI5lpRlrGrnSidzb` — replaced old $29.99 price 2026-07-23, old price archived), env var set, redeployed, both monthly and yearly Checkout Session creation verified live (real Stripe sessions created then immediately expired, no charge)
 - [x] Checkout success/cancel URLs point to `measureapp.pro`
 - [x] Webhook endpoint — cleaned up (found and removed 2 accidental duplicates), one clean endpoint registered at `https://measureapp.pro/api/webhook`, signing secret rotated and matched in Vercel
 - [x] Webhook idempotency — **fully verified live**: first delivery processed (`received:true`), duplicate delivery of the same event ID correctly skipped (`received:true, duplicate:true`)
