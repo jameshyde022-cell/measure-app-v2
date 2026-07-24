@@ -635,9 +635,10 @@ function Pricing() {
       name: 'Pro Monthly',
       price: '$4.95',
       period: '/month',
-      badge: null,
+      badge: '2 Weeks Free',
       highlight: false,
       features: [
+        'First 2 weeks free · cancel anytime',
         'Unlimited exports',
         'More measurement lines',
         'Ghost mannequin images',
@@ -645,7 +646,7 @@ function Pricing() {
         'Background cleanup',
         'Listing-ready exports',
       ],
-      cta: 'Upgrade Monthly',
+      cta: 'Start 2-Week Free Trial',
       // TODO: To deep-link to the monthly checkout, update href to '/pricing?plan=monthly'
       // and read the param inside /pricing/page.js to pre-select the right Stripe price ID.
       href: '/pricing',

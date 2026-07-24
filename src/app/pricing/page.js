@@ -152,7 +152,7 @@ export default function PricingPage() {
                     <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 700, color: '#e8b84b' }}>$4.95</span>
                     <span style={{ fontSize: 12, color: '#555' }}>/mo</span>
                   </div>
-                  <div style={{ fontSize: 10, color: '#81C784' }}>First 2 months for the price of 1 · then $4.95/mo</div>
+                  <div style={{ fontSize: 10, color: '#81C784' }}>2 weeks free · then 2 months for the price of 1 · then $4.95/mo</div>
                 </>
               ) : (
                 <>
@@ -160,7 +160,7 @@ export default function PricingPage() {
                     <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 700, color: '#e8b84b' }}>$4.95</span>
                     <span style={{ fontSize: 12, color: '#555' }}>/mo</span>
                   </div>
-                  <div style={{ fontSize: 10, color: '#555' }}>Cancel anytime</div>
+                  <div style={{ fontSize: 10, color: '#81C784' }}>First 2 weeks free · then $4.95/mo · cancel anytime</div>
                 </>
               )}
             </div>
@@ -179,7 +179,7 @@ export default function PricingPage() {
               disabled={loading !== null}
               style={{ width: '100%', padding: '13px', background: loading === 'monthly' ? '#333' : '#e8b84b', border: 'none', fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 700, cursor: loading !== null ? 'not-allowed' : 'pointer', borderRadius: 2, color: '#0d0d0d', letterSpacing: '0.04em' }}
             >
-              {loading === 'monthly' ? 'Redirecting…' : 'Subscribe Monthly →'}
+              {loading === 'monthly' ? 'Redirecting…' : 'Start 2-Week Free Trial →'}
             </button>
           </div>
 
