@@ -59,12 +59,10 @@ export async function POST(req) {
 
     if (email) sessionParams.customer_email = email;
 
-    // 14-day free trial on the monthly plan. Card is collected up front
-    // (payment_method_collection defaults to 'always'); first charge of
-    // $4.95 happens when the trial ends. Cancel anytime during the trial.
-    if (!isYearly) {
-      sessionParams.subscription_data = { trial_period_days: 14 };
-    }
+    // 14-day free trial on both plans. Card is collected up front
+    // (payment_method_collection defaults to 'always'); the first charge
+    // happens when the trial ends. Cancel anytime during the trial.
+    sessionParams.subscription_data = { trial_period_days: 14 };
 
     // Apply referral coupon — only on monthly; yearly already carries a large discount
     if (influencer && !isYearly) {
@@ -78,6 +76,7 @@ export async function POST(req) {
       };
     } else if (influencer && isYearly) {
       sessionParams.subscription_data = {
+        ...sessionParams.subscription_data,
         metadata: {
           referral_code: influencer.code,
           influencer_id: influencer.id,

@@ -197,7 +197,7 @@ export default function PricingPage() {
                 <span style={{ fontFamily: "'Playfair Display', serif", fontSize: 40, fontWeight: 700, color: '#e8b84b' }}>$19.95</span>
                 <span style={{ fontSize: 12, color: '#555' }}>/yr</span>
               </div>
-              <div style={{ fontSize: 10, color: '#555' }}>~$1.66/mo · save over 66% vs monthly</div>
+              <div style={{ fontSize: 10, color: '#81C784' }}>First 2 weeks free · ~$1.66/mo · save over 66% vs monthly</div>
             </div>
 
             <div style={{ flex: 1, marginBottom: 24 }}>
@@ -218,7 +218,7 @@ export default function PricingPage() {
               disabled={loading !== null}
               style={{ width: '100%', padding: '13px', background: loading === 'yearly' ? '#333' : '#e8b84b', border: 'none', fontFamily: "'Playfair Display', serif", fontSize: 15, fontWeight: 700, cursor: loading !== null ? 'not-allowed' : 'pointer', borderRadius: 2, color: '#0d0d0d', letterSpacing: '0.04em' }}
             >
-              {loading === 'yearly' ? 'Redirecting…' : 'Subscribe Yearly →'}
+              {loading === 'yearly' ? 'Redirecting…' : 'Start 2-Week Free Trial →'}
             </button>
           </div>
 

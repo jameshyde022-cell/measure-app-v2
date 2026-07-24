@@ -658,11 +658,12 @@ function Pricing() {
       badge: 'Best Value',
       highlight: true,
       features: [
+        'First 2 weeks free · cancel anytime',
         'Everything in Pro Monthly',
         'Lower yearly cost',
         'Best for active clothing sellers',
       ],
-      cta: 'Upgrade Yearly',
+      cta: 'Start 2-Week Free Trial',
       // TODO: To deep-link to the yearly checkout, update href to '/pricing?plan=yearly'
       // and read the param inside /pricing/page.js to pre-select the right Stripe price ID.
       href: '/pricing',
