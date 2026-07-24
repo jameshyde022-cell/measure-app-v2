@@ -33,7 +33,7 @@ export async function POST(request) {
   }
 
   // ── 1c. Server-side free-tier daily export limit ──────────────────────────
-  // Source of truth for the "3 free exports/day" rule. Checked BEFORE any
+  // Source of truth for the "1 free export/day" rule. Checked BEFORE any
   // storage upload or DB insert so rejected exports do no wasted work and never
   // count against the user. Pro (and unexpired Pro-trial) users are exempt.
   try {
@@ -65,7 +65,7 @@ export async function POST(request) {
         return Response.json({ error: 'Failed to verify export limit' }, { status: 500 })
       }
 
-      if ((count ?? 0) >= 3) {
+      if ((count ?? 0) >= 1) {
         console.log('[save-export] daily free export limit reached for:', email)
         return Response.json(
           { error: 'Daily free export limit reached. Upgrade to Pro for unlimited exports.' },

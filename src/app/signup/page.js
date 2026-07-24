@@ -134,7 +134,7 @@ function SignupForm() {
       </button>
 
       <p style={{ fontSize: 11, color: C.dim, textAlign: 'center', lineHeight: 1.7, fontFamily: 'monospace', margin: 0 }}>
-        Free plan includes 3 exports. No credit card required.
+        Free plan includes 1 export per day. No credit card required.
       </p>
 
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, margin: '4px 0' }}>

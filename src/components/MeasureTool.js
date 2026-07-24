@@ -16,7 +16,7 @@ const LINE_COLORS = [
 
 const HIT_RADIUS = 22;
 const FREE_MAX_LINES = 4;
-const FREE_MAX_EXPORTS_PER_DAY = 3;
+const FREE_MAX_EXPORTS_PER_DAY = 1;
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
 function todayKey(email) {
@@ -580,7 +580,7 @@ export default function MeasureTool() {
 
   const handleExport=()=>{
     if(!pro&&exportCount>=FREE_MAX_EXPORTS_PER_DAY){
-      setLimitMsg(`You've used all 3 free exports for today. Upgrade to Pro for unlimited exports.`);
+      setLimitMsg(`You've used your free export for today. Upgrade to Pro for unlimited exports.`);
       track('limit_reached', { reason: 'export_limit_client' });
       return;
     }

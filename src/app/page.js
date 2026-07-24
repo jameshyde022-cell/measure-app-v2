@@ -139,7 +139,7 @@ function Hero() {
           </p>
           <div className={styles.heroButtons}>
             <Link href="/app" className={styles.btnPrimary}>
-              Try Free — 3 Exports Included
+              Try Free — 1 Export Per Day
             </Link>
             <a href="#how-it-works" className={styles.btnSecondary}>
               View How It Works
@@ -623,7 +623,7 @@ function Pricing() {
       badge: null,
       highlight: false,
       features: [
-        '3 exports',
+        '1 export per day',
         'Up to 4 measurement lines per image',
         'Try core tools',
         'No credit card required',
@@ -698,7 +698,7 @@ const faqItems = [
   },
   {
     q: 'What do I get for free?',
-    a: 'The free plan includes 3 exports and up to 4 measurement lines per image.',
+    a: 'The free plan includes 1 export per day and up to 4 measurement lines per image.',
   },
   {
     q: 'Does MEASURE guarantee more sales?',
@@ -736,7 +736,7 @@ function FinalCTA() {
         margin: '0 auto 36px',
         lineHeight: 1.75,
       }}>
-        Try MEASURE with 3 free exports and see how it fits into your listing workflow.
+        Try MEASURE with 1 free export per day and see how it fits into your listing workflow.
       </p>
       <Link href="/app" className={styles.btnPrimary}>
         Start Free
