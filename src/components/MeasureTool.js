@@ -978,6 +978,9 @@ export default function MeasureTool() {
             <div style={{fontSize:11,color:'#999',letterSpacing:'0.12em',textAlign:'center',textTransform:'uppercase'}}>
               JPG - PNG - WEBP - Drop anywhere above
             </div>
+            <div style={{fontSize:10,color:'#666',letterSpacing:'0.1em',textAlign:'center',lineHeight:1.6}}>
+              Max upload size 20MB. Larger photos are automatically resized before processing.
+            </div>
 
             {uploadError&&(
               <div style={{background:'#1a0a0a',border:'1px solid #c8401a',borderRadius:2,padding:'10px 12px'}}>
@@ -1006,6 +1009,9 @@ export default function MeasureTool() {
             <div style={{borderTop:'1px solid #1a1a1a',paddingTop:20,display:'flex',flexDirection:'column',gap:12}}>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:'#f0ebe0'}}>Rear View Ghost Mannequin</div>
               <div style={{fontSize:11,color:'#999',letterSpacing:'0.12em',lineHeight:1.8,textTransform:'uppercase'}}>Upload the back-side product photo to generate a rear-facing ghost mannequin image.</div>
+              <div style={{fontSize:10,color:'#666',letterSpacing:'0.1em',lineHeight:1.6}}>
+                Max upload size 20MB. Larger photos are automatically resized before processing.
+              </div>
               <div
                 onClick={()=>rearFileRef.current.click()}
                 onDragOver={e=>{e.preventDefault();}}

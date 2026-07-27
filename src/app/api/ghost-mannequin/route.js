@@ -5,7 +5,7 @@ export const maxDuration = 60;
 const FEMALE_PROMPT = `Use the uploaded garment image as the exact garment blueprint.
 
 VIEW REQUIREMENT:
-Render the garment in a FRONT VIEW.
+Render the garment in a [FRONT VIEW].
 - FRONT VIEW: show the front side of the garment only
 - do not mix front and back views
 - do not angle or rotate the garment
@@ -60,7 +60,7 @@ Background and styling:
 - no model, no hanger, no props
 
 Final requirement:
-The result must clearly read as a true front-facing ghost mannequin image, never a mixed or angled view.`;
+The result must clearly read as a true front-facing OR rear-facing ghost mannequin image, never a mixed or angled view.`;
 
 const MALE_PROMPT = `Use the uploaded garment image as the exact garment blueprint.
 
@@ -138,57 +138,64 @@ Final requirement:
 The result must read instantly as premium ghost-mannequin photography on an invisible male torso with a flat male pectoral chest only, never a female bust form.`;
 
 const FEMALE_REAR_PROMPT = `Use the uploaded garment image as the exact garment blueprint.
-The uploaded image is the BACK SIDE of the garment photographed facing the camera as a standard product image.
 
-Generate a photorealistic ecommerce ghost-mannequin image showing an invisible mannequin viewed FROM BEHIND.
+VIEW REQUIREMENT:
+Render the garment in a [Rear VIEW].
+- REAR VIEW: show the back side of the garment only
+- do not mix front and back views
+- do not angle or rotate the garment
+- straight-on orthographic view only
 
-CRITICAL ORIENTATION REQUIREMENT:
-- the camera must be looking at the mannequin's back
-- the mannequin must be facing away from the camera
-- show the back of the invisible mannequin only
-- show the uploaded garment being worn on the mannequin's back
-- do not generate a front-facing mannequin
-- do not rotate to a front view
-- do not mix front and back information
-- straight-on rear view only
-- no angled or 3/4 rear view
+Generate a photorealistic ecommerce ghost-mannequin product image of this garment.
 
-Generate true ghost-mannequin photography, not a flat lay.
-The garment must appear worn on an invisible mannequin with feminine swimsuit-model body shape.
+This must NOT look like a flat lay.
+This must NOT look like the garment is lying on a surface.
+This must NOT look front-pressed or two-dimensional.
+
+The garment must appear as if it is being worn on an invisible mannequin with a swimsuit-model body shape, so the clothing shows real three-dimensional body form.
 
 Invisible mannequin body shape requirements:
-- natural female upper back contour
-- natural shoulder blade structure
+- feminine swimsuit-model proportions
+- natural bust contour where applicable
 - tapered waist where applicable
-- realistic back torso volume
+- realistic torso volume
 - natural shoulder slope
-- side seams wrapping naturally around the body
+- accurate chest, side seam, and body shaping
 - body presence visible only through garment fit
-- absolutely no visible mannequin structure
+- absolutely no visible mannequin or support structure
 
 Critical anti-flat-lay requirements:
-- garment must wrap around a 3D back torso
-- back neckline and armholes must show interior depth where applicable
+- garment must wrap around a 3D torso
+- side seams must curve naturally around the body
+- openings must show interior depth (neckline, armholes, leg openings)
 - no flattened symmetry
-- no tabletop or laid-flat appearance
+- no overhead/tabletop look
+- no paper-doll effect
 - no floating empty shell
 
 Garment accuracy requirements:
-- preserve the uploaded back view exactly
-- preserve all back-specific details exactly
-- preserve seams, closures, cutouts, trims, hardware, fabric texture, and pattern placement
+- match the garment exactly as shown in the reference image
+- preserve silhouette, proportions, and length
+- preserve fabric texture, color, and pattern placement
+- preserve seams, stitching, and construction
+- preserve closures, trims, and hardware
 - do not redesign or simplify anything
+
+Fit and drape requirements:
+- natural gravity-based drape
+- realistic tension from shoulders through body
+- accurate folds and volume
+- no stiffness, no inflation, no over-smoothing
 
 Background and styling:
 - clean white studio background
-- centered ecommerce product shot
-- soft even professional lighting
-- no model
-- no hanger
-- no props
+- straight-on ecommerce product shot
+- centered and fully visible
+- high detail, soft even lighting
+- no model, no hanger, no props
 
 Final requirement:
-The final image must read instantly as a ghost mannequin photographed from behind, showing the mannequin's back wearing the uploaded back-view garment.`;
+The result must clearly read as a true front-facing OR rear-facing ghost mannequin image, never a mixed or angled view.`;
 
 const MALE_REAR_PROMPT = `Use the uploaded garment image as the exact garment blueprint.
 The uploaded image is the BACK SIDE of the garment photographed facing the camera as a standard product image.
