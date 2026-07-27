@@ -263,6 +263,10 @@ export async function POST(req) {
       return NextResponse.json({ error: 'No image provided' }, { status: 400 });
     }
 
+    console.log('[ghost-mannequin] request received', {
+      receivedBytes: imageFile.size, mimeType: imageFile.type, gender, view,
+    });
+
     const arrayBuffer = await imageFile.arrayBuffer();
     const base64Image = Buffer.from(arrayBuffer).toString('base64');
     const mimeType = imageFile.type || 'image/jpeg';

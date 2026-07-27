@@ -19,6 +19,62 @@ const FREE_MAX_LINES = 4;
 const FREE_MAX_EXPORTS_PER_DAY = 1;
 const MAX_FILE_SIZE = 20 * 1024 * 1024;
 
+// Vercel Functions reject request bodies over ~4.5MB before our route ever
+// runs (413, thrown at the platform edge, not from our code). Phone photos
+// routinely exceed that, so downscale before sending to /api/ghost-mannequin.
+// Target is set below the platform limit to leave headroom for multipart/
+// form-data overhead (boundaries, headers, base64 is NOT used here since we
+// send a raw Blob, but the multipart wrapper still adds some bytes).
+const UPLOAD_TARGET_BYTES = 3.8 * 1024 * 1024;
+
+// Ordered from best quality to most aggressive. Dimensions only shrink
+// (never upscale, never distort — both axes always scaled by the same
+// factor) so the garment's proportions stay correct.
+const DOWNSCALE_ATTEMPTS = [
+  { maxDim: 1800, quality: 0.85 },
+  { maxDim: 1800, quality: 0.7 },
+  { maxDim: 1400, quality: 0.7 },
+  { maxDim: 1400, quality: 0.55 },
+  { maxDim: 1100, quality: 0.55 },
+  { maxDim: 900,  quality: 0.5 },
+];
+
+function encodeBitmapAt(bitmap, maxDim, quality) {
+  const scale = Math.min(1, maxDim / Math.max(bitmap.width, bitmap.height));
+  const w = Math.max(1, Math.round(bitmap.width * scale));
+  const h = Math.max(1, Math.round(bitmap.height * scale));
+  const canvas = document.createElement('canvas');
+  canvas.width = w; canvas.height = h;
+  canvas.getContext('2d').drawImage(bitmap, 0, 0, w, h);
+  return new Promise(resolve => canvas.toBlob(blob => resolve({ blob, w, h }), 'image/jpeg', quality));
+}
+
+// Returns { blob, width, height, originalBytes, resizedBytes } and logs
+// original/resized sizes so failures can be diagnosed from the console.
+async function downscaleForUpload(file) {
+  // imageOrientation:'from-image' bakes in the EXIF rotation so the garment
+  // doesn't come out sideways once the canvas strips the EXIF tag.
+  const bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
+
+  let best = null;
+  for (const attempt of DOWNSCALE_ATTEMPTS) {
+    const { blob, w, h } = await encodeBitmapAt(bitmap, attempt.maxDim, attempt.quality);
+    if (blob) best = { blob, w, h };
+    if (blob && blob.size <= UPLOAD_TARGET_BYTES) break;
+  }
+  bitmap.close?.();
+
+  const result = best || { blob: file, w: null, h: null };
+  console.log('[ghost-mannequin] downscaled for upload', {
+    originalBytes: file.size,
+    resizedBytes: result.blob.size,
+    resizedDimensions: result.w ? `${result.w}x${result.h}` : 'unchanged',
+    underTarget: result.blob.size <= UPLOAD_TARGET_BYTES,
+  });
+
+  return { blob: result.blob, width: result.w, height: result.h, originalBytes: file.size, resizedBytes: result.blob.size };
+}
+
 function todayKey(email) {
   const date = new Date().toISOString().slice(0,10);
   return email ? `measure_exports_${email}_${date}` : `measure_exports_${date}`;
@@ -166,6 +222,7 @@ export default function MeasureTool() {
   const [showExport,setShowExport]   = useState(false);
   const [bgRemoving,setBgRemoving]   = useState(false);
   const [bgError,setBgError]         = useState(null);
+  const [ghostError,setGhostError]   = useState(null); // { message, file } — shown with retry/fallback actions instead of a silent fallback
   const [uploadError,setUploadError] = useState(null);
   const [loadingStep,setLoadingStep] = useState(0);
   const [aspectRatio,setAspectRatio] = useState('original');
@@ -176,8 +233,10 @@ export default function MeasureTool() {
   const [limitMsg,setLimitMsg]       = useState(null);
   const [gender,setGender]           = useState('female');
   const [rearGenerating,setRearGenerating] = useState(false);
+  const [rearStatus,setRearStatus]   = useState('');
   const [rearResult,setRearResult]   = useState(null);
   const [rearError,setRearError]     = useState(null);
+  const [rearRetryFile,setRearRetryFile] = useState(null);
   const [modelGenerating,setModelGenerating] = useState(false);
   const [modelResult,setModelResult] = useState(null);
   const [modelError,setModelError]   = useState(null);
@@ -199,6 +258,7 @@ export default function MeasureTool() {
   ];
 
   const LOADING_STEPS = [
+    'Resizing your photo...',
     'Uploading your photo...',
     'Analyzing garment details...',
     'Generating ghost mannequin...',
@@ -305,39 +365,69 @@ export default function MeasureTool() {
     reader.readAsDataURL(file);
   },[]);
 
+  // Loads the untouched original file straight into the crop phase. Used both
+  // for the "Skip BG Removal" flat-lay path and as an explicit, user-chosen
+  // fallback when ghost mannequin generation fails (never automatic).
+  const loadRawFileToCrop = useCallback((file) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => { imgRef.current = img; setNatural({ w: img.naturalWidth, h: img.naturalHeight }); setBgRemoving(false); setPhase('crop'); };
+      img.onerror = () => {
+        console.error('[loadRawFileToCrop] failed to load image');
+        setBgRemoving(false);
+        setBgError('Could not load this image. Please try a different photo (JPG, PNG, or WEBP).');
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }, []);
+
   const handleFile=useCallback(async(file)=>{
     if (!file||!file.type.startsWith('image/')) return;
     if (file.size>MAX_FILE_SIZE) { setUploadError('Image is too large (max 20MB). Please choose a smaller photo.'); return; }
     setUploadError(null);
     track('upload_started', { mode: 'auto_bg_removal' });
-    setLines([]); setColorIdx(0); setShowExport(false); setBgError(null); setLimitMsg(null);
+    setLines([]); setColorIdx(0); setShowExport(false); setBgError(null); setGhostError(null); setLimitMsg(null);
     setCropRect({x:0,y:0,w:0,h:0});
     setIx({mode:'idle',p1:null,p2:null,color:LINE_COLORS[0],dragging:null});
-    setBgRemoving(true); setLoadingStep(0);
-    let stepIdx=0;
-    const si=setInterval(()=>{ stepIdx=Math.min(stepIdx+1,4); setLoadingStep(stepIdx); },4000);
+    setBgRemoving(true); setLoadingStep(0); // "Resizing your photo..."
+    let si=null;
     try {
-      const fd=new FormData(); fd.append('image_file',file); fd.append('gender',gender);
+      const { blob: uploadBlob, width, height, originalBytes, resizedBytes } = await downscaleForUpload(file);
+
+      setLoadingStep(1); // "Uploading your photo..."
+      let stepIdx=1;
+      si=setInterval(()=>{ stepIdx=Math.min(stepIdx+1,LOADING_STEPS.length-1); setLoadingStep(stepIdx); },4000);
+
+      const fd=new FormData(); fd.append('image_file',uploadBlob,'upload.jpg'); fd.append('gender',gender);
       const res=await fetch('/api/ghost-mannequin',{method:'POST',body:fd});
-      if (res.ok) { clearInterval(si); track('bg_removal_used'); loadImageFromBlob(await res.blob()); return; }
       clearInterval(si);
-      const err=await res.json().catch(()=>({}));
-      track('bg_removal_failed');
-      setBgError(err.error||'Ghost mannequin generation failed. Using original photo.');
-    } catch(e) { clearInterval(si); track('bg_removal_failed'); setBgError('Ghost mannequin generation failed. Using original photo.'); }
-    const reader=new FileReader();
-    reader.onload=e=>{
-      const img=new Image();
-      img.onload=()=>{ imgRef.current=img; setNatural({w:img.naturalWidth,h:img.naturalHeight}); setBgRemoving(false); setPhase('crop'); };
-      img.onerror=()=>{
-        console.error('[handleFile] fallback image load failed');
+      console.log('[ghost-mannequin] upload response', {
+        status: res.status, ok: res.ok, originalBytes, resizedBytes,
+        resizedDimensions: width ? `${width}x${height}` : 'unchanged',
+      });
+
+      if (res.ok) {
+        track('bg_removal_used');
         setBgRemoving(false);
-        setBgError('Could not load this image. Please try a different photo (JPG, PNG, or WEBP).');
-      };
-      img.src=e.target.result;
-    };
-    reader.readAsDataURL(file);
-  },[]);
+        loadImageFromBlob(await res.blob());
+        return;
+      }
+
+      const err=await res.json().catch(()=>({}));
+      console.error('[ghost-mannequin] generation failed', { status: res.status, error: err.error });
+      track('bg_removal_failed');
+      setBgRemoving(false);
+      setGhostError({ message: err.error || `Ghost mannequin generation failed (HTTP ${res.status}).`, file });
+    } catch(e) {
+      if (si) clearInterval(si);
+      console.error('[ghost-mannequin] request threw', e);
+      track('bg_removal_failed');
+      setBgRemoving(false);
+      setGhostError({ message: 'Ghost mannequin generation failed. Check your connection and try again.', file });
+    }
+  },[gender]);
 
   const toCanvas=(clientX,clientY)=>{
     const c=canvasRef.current,r=c.getBoundingClientRect();
@@ -675,21 +765,31 @@ export default function MeasureTool() {
     setRearGenerating(true);
     setRearResult(null);
     setRearError(null);
+    setRearRetryFile(file);
+    setRearStatus('Resizing your photo...');
     try {
+      const { blob: uploadBlob, width, height, originalBytes, resizedBytes } = await downscaleForUpload(file);
+      setRearStatus('Generating rear view — this may take 20–30 seconds...');
       const fd = new FormData();
-      fd.append("image_file", file);
+      fd.append("image_file", uploadBlob, "upload.jpg");
       fd.append("gender", gender);
       fd.append("view", "rear");
       const res = await fetch("/api/ghost-mannequin", { method: "POST", body: fd });
+      console.log('[ghost-mannequin] rear upload response', {
+        status: res.status, ok: res.ok, originalBytes, resizedBytes,
+        resizedDimensions: width ? `${width}x${height}` : 'unchanged',
+      });
       if (res.ok) {
         const blob = await res.blob();
         setRearResult(URL.createObjectURL(blob));
       } else {
         const err = await res.json().catch(() => ({}));
-        setRearError(err.error || "Rear view generation failed.");
+        console.error('[ghost-mannequin] rear generation failed', { status: res.status, error: err.error });
+        setRearError(err.error || `Rear view generation failed (HTTP ${res.status}).`);
       }
     } catch (e) {
-      setRearError("Rear view generation failed.");
+      console.error('[ghost-mannequin] rear request threw', e);
+      setRearError("Rear view generation failed. Check your connection and try again.");
     }
     setRearGenerating(false);
   };
@@ -885,6 +985,23 @@ export default function MeasureTool() {
               </div>
             )}
 
+            {ghostError&&(
+              <div style={{background:'#1a0a0a',border:'1px solid #c8401a',borderRadius:2,padding:'14px',display:'flex',flexDirection:'column',gap:10}}>
+                <span style={{fontFamily:'monospace',fontSize:11,color:'#EF9A9A',lineHeight:1.6}}>{ghostError.message}</span>
+                <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                  <button onClick={()=>{const f=ghostError.file;setGhostError(null);handleFile(f);}} style={{padding:'8px 14px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:11,letterSpacing:'0.1em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d',fontWeight:'bold'}}>
+                    Try Again
+                  </button>
+                  <button onClick={()=>{const f=ghostError.file;setGhostError(null);loadRawFileToCrop(f);}} style={{padding:'8px 14px',background:'transparent',border:'1px solid #2a2a2a',fontFamily:'monospace',fontSize:11,letterSpacing:'0.1em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#f0ebe0'}}>
+                    Use Original Photo
+                  </button>
+                  <button onClick={()=>{setGhostError(null);fileRef.current.click();}} style={{padding:'8px 14px',background:'transparent',border:'1px solid #2a2a2a',fontFamily:'monospace',fontSize:11,letterSpacing:'0.1em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#f0ebe0'}}>
+                    Upload Smaller Photo
+                  </button>
+                </div>
+              </div>
+            )}
+
             {/* Rear View Generator */}
             <div style={{borderTop:'1px solid #1a1a1a',paddingTop:20,display:'flex',flexDirection:'column',gap:12}}>
               <div style={{fontFamily:"'Playfair Display',serif",fontSize:14,color:'#f0ebe0'}}>Rear View Ghost Mannequin</div>
@@ -902,12 +1019,20 @@ export default function MeasureTool() {
               {rearGenerating&&(
                 <div style={{display:'flex',alignItems:'center',gap:12,padding:'14px',background:'#080808',border:'1px solid #1e1e1e',borderRadius:2}}>
                   <div style={{width:18,height:18,borderRadius:'50%',border:'2px solid transparent',borderTopColor:'#e8b84b',animation:'spin 0.9s linear infinite',flexShrink:0}}/>
-                  <span style={{fontFamily:'monospace',fontSize:11,color:'#e8b84b',letterSpacing:'0.1em'}}>Generating rear view — this may take 20–30 seconds...</span>
+                  <span style={{fontFamily:'monospace',fontSize:11,color:'#e8b84b',letterSpacing:'0.1em'}}>{rearStatus}</span>
                 </div>
               )}
               {rearError&&(
-                <div style={{background:'#1a0a0a',border:'1px solid #c8401a',borderRadius:2,padding:'10px 12px'}}>
-                  <span style={{fontFamily:'monospace',fontSize:11,color:'#EF9A9A'}}>{rearError}</span>
+                <div style={{background:'#1a0a0a',border:'1px solid #c8401a',borderRadius:2,padding:'14px',display:'flex',flexDirection:'column',gap:10}}>
+                  <span style={{fontFamily:'monospace',fontSize:11,color:'#EF9A9A',lineHeight:1.6}}>{rearError}</span>
+                  <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                    <button onClick={()=>{const f=rearRetryFile;setRearError(null);if(f)handleRearView(f);}} style={{padding:'8px 14px',background:'#e8b84b',border:'none',fontFamily:'monospace',fontSize:11,letterSpacing:'0.1em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#0d0d0d',fontWeight:'bold'}}>
+                      Try Again
+                    </button>
+                    <button onClick={()=>{setRearError(null);rearFileRef.current.click();}} style={{padding:'8px 14px',background:'transparent',border:'1px solid #2a2a2a',fontFamily:'monospace',fontSize:11,letterSpacing:'0.1em',textTransform:'uppercase',cursor:'pointer',borderRadius:2,color:'#f0ebe0'}}>
+                      Upload Smaller Photo
+                    </button>
+                  </div>
                 </div>
               )}
               {rearResult&&(
